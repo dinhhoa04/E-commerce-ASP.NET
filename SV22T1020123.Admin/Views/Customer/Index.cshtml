@@ -1,0 +1,58 @@
+﻿@model PaginationSearchInput
+@{
+    ViewBag.Title = "Quản lý Khách hàng";
+}
+@section PageToolBar {
+    <a href="~/Customer/Create" class="btn btn-primary">
+        <i class="bi bi-plus-circle me-1"></i>
+        Bổ sung
+    </a>
+}
+<div class="card mb-3">
+    <div class="card-body">
+        <div class="input-group">
+            <input type="text"
+                   id="searchValue"
+                   class="form-control"
+                   placeholder="Tên khách hàng..."
+                   value="@Model.SearchValue"
+                   autofocus />
+            <button class="btn btn-info d-flex align-items-center" onclick="searchData()">
+                <i class="bi bi-search me-1"></i>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="customerTable">
+    @await Html.PartialAsync("_CustomerTable", await SV22T1020123.BusinessLayers.PartnerDataService.ListCustomerAsync(Model))
+</div>
+
+@section Scripts {
+    <script>
+        function searchData() {
+            let searchValue = document.getElementById("searchValue").value;
+            let url = `/Customer/Search?page=1&pageSize=@Model.PageSize&searchValue=${searchValue}`;
+            fetch(url)
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById("customerTable").innerHTML = html;
+                });
+        }
+
+        function changePage(page) {
+            let searchValue = document.getElementById("searchValue").value;
+            let url = `/Customer/Search?page=${page}&pageSize=@Model.PageSize&searchValue=${searchValue}`;
+            fetch(url)
+                .then(r => r.text())
+                .then(html => {
+                    document.getElementById("customerTable").innerHTML = html;
+                });
+        }
+
+        // Search khi nhấn Enter
+        document.getElementById("searchValue").addEventListener("keydown", function (e) {
+            if (e.key === "Enter") searchData();
+        });
+    </script>
+}
