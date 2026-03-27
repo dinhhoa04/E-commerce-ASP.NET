@@ -1,22 +1,34 @@
-﻿using Microsoft.AspNetCore.Mvc;
-using SV22T1020123.DataLayers.SQLServer;
+﻿using SV22T1020123.DataLayers.SQLServer;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Configuration;
+using SV22T1020123.Models.Catalog;
 using SV22T1020123.Models.Common;
 
 namespace SV22T1020123.Admin.Controllers
 {
     public class TestController : Controller
     {
-        public async Task<IActionResult> Index(int page = 1, int pageSize = 10, string searchValue = "")
+        private readonly IConfiguration _configuration;
+
+        public TestController(IConfiguration configuration)
         {
-            var input = new PaginationSearchInput()
+            _configuration = configuration;
+        }
+
+        public async Task<IActionResult> TestProduct()
+        {
+            var repo = new SupplierRepository(
+                _configuration.GetConnectionString("LiteCommerceDB")
+            );
+
+            var input = new ProductSearchInput()
             {
-                Page = page,
-                PageSize = pageSize,
-                SearchValue = searchValue
+                Page = 1,
+                PageSize = 10
             };
-            string connectionString = "Server=.;Database=LiteCommerceDB;Trusted_Connection=True;TrustServerCertificate=True";
-            var repository = new SupplierRepository(connectionString);
-            var result = await repository.ListAsync(input);
+
+            var result = await repo.ListAsync(input);
+
             return Json(result);
         }
     }

@@ -49,7 +49,7 @@ namespace SV22T1020123.Admin
         /// <summary>
         /// Đường dẫn vật lý đến thư mục gốc lưu ứng dụng Web
         /// </summary>
-        public static string ApplicationRootPath => _webHostEnvironment?.ContentRootPath ?? string.Empty;        
+        public static string ApplicationRootPath => _webHostEnvironment?.ContentRootPath ?? string.Empty;
 
         /// <summary>
         /// Ghi dữ liệu vào session
@@ -115,12 +115,10 @@ namespace SV22T1020123.Admin
             _configuration?.GetSection(name).Bind(value);
             return value;
         }
-
         /// <summary>
-        /// so dong du lieu hien thi tren moi trang khi phan trang 
+        /// Số dòng hiển thị trên mỗi trang khi phân trang dữ liệu
         /// </summary>
         public static int PageSize => Convert.ToInt32(GetConfigValue("PageSize"));
 
-        public static string AppName => GetConfigValue(AppName);
     }
 }

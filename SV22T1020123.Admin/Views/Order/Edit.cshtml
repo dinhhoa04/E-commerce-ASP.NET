@@ -1,0 +1,108 @@
+﻿@{
+    ViewBag.Title = "Cập nhật đơn hàng";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+
+        <!-- ================== ORDER INFO (READ ONLY) ================== -->
+        <div class="card card-outline card-info mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-receipt"></i> Thông tin đơn hàng
+                </h5>
+            </div>
+
+            <div class="card-body">
+
+                <div class="row mb-2">
+                    <div class="col-md-3 fw-semibold">Mã đơn hàng:</div>
+                    <div class="col-md-9">#1001</div>
+                </div>
+
+                <div class="row mb-2">
+                    <div class="col-md-3 fw-semibold">Khách đặt hàng:</div>
+                    <div class="col-md-9">Nguyễn Văn A</div>
+                </div>
+
+                <div class="row mb-2">
+                    <div class="col-md-3 fw-semibold">Thời điểm tạo:</div>
+                    <div class="col-md-9">10/02/2026 09:15</div>
+                </div>
+
+                <div class="row mb-2">
+                    <div class="col-md-3 fw-semibold">Địa chỉ giao hàng:</div>
+                    <div class="col-md-9">123 Lê Lợi, Quận 1</div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- ================== UPDATE PROCESS ================== -->
+        <div class="card card-outline card-primary mb-3">
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-gear"></i> Cập nhật xử lý đơn hàng
+                </h5>
+            </div>
+
+            <div class="card-body">
+                <form>
+
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">Nhân viên xử lý</label>
+                        <div class="col-md-9">
+                            <select class="form-select">
+                                <option>Trần Thị B</option>
+                                <option>Nguyễn Văn D</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">Người giao hàng</label>
+                        <div class="col-md-9">
+                            <select class="form-select">
+                                <option>Nguyễn Văn Shipper</option>
+                                <option>Trần Văn Giao</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">Trạng thái đơn hàng</label>
+                        <div class="col-md-9">
+                            <select class="form-select">
+                                <option>Mới tạo</option>
+                                <option>Đã tiếp nhận</option>
+                                <option>Đang giao</option>
+                                <option>Hoàn tất</option>
+                                <option>Hủy</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="row mb-3">
+                        <label class="col-md-3 col-form-label">Ghi chú</label>
+                        <div class="col-md-9">
+                            <textarea class="form-control"
+                                      rows="3"
+                                      placeholder="Ghi chú xử lý đơn hàng"></textarea>
+                        </div>
+                    </div>
+
+                </form>
+            </div>
+
+            <div class="card-footer d-flex justify-content-end">
+                <a href="/Order" class="btn btn-secondary me-2">
+                    Bỏ qua
+                </a>
+                <button class="btn btn-primary">
+                    <i class="bi bi-save"></i> Lưu thay đổi
+                </button>
+            </div>
+        </div>
+
+    </div>
+</div>

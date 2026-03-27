@@ -6,9 +6,6 @@ using SV22T1020123.Models.Sales;
 
 namespace SV22T1020123.DataLayers.SQLServer
 {
-    /// <summary>
-    /// Thực hiện các thao tác truy xuất dữ liệu đối với đơn hàng
-    /// </summary>
     public class OrderRepository : IOrderRepository
     {
         private readonly string _connectionString;
@@ -18,194 +15,207 @@ namespace SV22T1020123.DataLayers.SQLServer
             _connectionString = connectionString;
         }
 
+        // =====================================================
+        // LẤY DANH SÁCH ĐƠN HÀNG (PHÂN TRANG)
+        // =====================================================
         public async Task<PagedResult<OrderViewInfo>> ListAsync(OrderSearchInput input)
         {
             using var connection = new SqlConnection(_connectionString);
 
             var parameters = new
             {
-                search = $"%{input.SearchValue}%",
-                input.Status,
-                input.DateFrom,
-                input.DateTo,
-                input.Offset,
-                input.PageSize
+                Page = input.Page,
+                PageSize = input.PageSize,
+                SearchValue = input.SearchValue ?? "",
+                Status = (int)input.Status,
+                DateFrom = input.DateFrom,
+                DateTo = input.DateTo
             };
 
-            string where = @" WHERE (c.CustomerName LIKE @search OR c.ContactName LIKE @search)
-                              AND (@Status = 0 OR o.Status = @Status)
-                              AND (@DateFrom IS NULL OR o.OrderTime >= @DateFrom)
-                              AND (@DateTo IS NULL OR o.OrderTime <= @DateTo) ";
+            var sql = @"
+SELECT COUNT(*) 
+FROM Orders
+WHERE (@SearchValue = '' OR OrderID LIKE '%' + @SearchValue + '%')
 
-            int rowCount = await connection.ExecuteScalarAsync<int>(
-                $@"SELECT COUNT(*)
-                   FROM Orders o
-                   LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
-                   {where}", parameters);
+SELECT o.*, 
+       c.CustomerName, c.ContactName AS CustomerContactName,
+       c.Email AS CustomerEmail, c.Phone AS CustomerPhone,
+       c.Address AS CustomerAddress,
+       e.FullName AS EmployeeName,
+       s.ShipperName, s.Phone AS ShipperPhone
+FROM Orders o
+LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
+LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
+LEFT JOIN Shippers s ON o.ShipperID = s.ShipperID
+ORDER BY o.OrderID DESC
+OFFSET (@Page - 1) * @PageSize ROWS
+FETCH NEXT @PageSize ROWS ONLY";
 
-            var data = await connection.QueryAsync<OrderViewInfo>(
-                $@"SELECT o.*,
-                          c.CustomerName,
-                          c.ContactName AS CustomerContactName,
-                          c.Email AS CustomerEmail,
-                          c.Phone AS CustomerPhone,
-                          c.Address AS CustomerAddress,
-                          e.FullName AS EmployeeName,
-                          s.ShipperName,
-                          s.Phone AS ShipperPhone
-                   FROM Orders o
-                   LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
-                   LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
-                   LEFT JOIN Shippers s ON o.ShipperID = s.ShipperID
-                   {where}
-                   ORDER BY o.OrderTime DESC
-                   OFFSET @Offset ROWS
-                   FETCH NEXT @PageSize ROWS ONLY", parameters);
+            using var multi = await connection.QueryMultipleAsync(sql, parameters);
+
+            int rowCount = await multi.ReadSingleAsync<int>();
+            var data = (await multi.ReadAsync<OrderViewInfo>()).ToList();
 
             return new PagedResult<OrderViewInfo>()
             {
                 Page = input.Page,
                 PageSize = input.PageSize,
                 RowCount = rowCount,
-                DataItems = data.ToList()
+                DataItems = data
             };
         }
 
+        // =====================================================
+        // LẤY THÔNG TIN 1 ĐƠN HÀNG
+        // =====================================================
         public async Task<OrderViewInfo?> GetAsync(int orderID)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            return await connection.QueryFirstOrDefaultAsync<OrderViewInfo>(
-                @"SELECT o.*,
-                         c.CustomerName,
-                         c.ContactName AS CustomerContactName,
-                         c.Email AS CustomerEmail,
-                         c.Phone AS CustomerPhone,
-                         c.Address AS CustomerAddress,
-                         e.FullName AS EmployeeName,
-                         s.ShipperName,
-                         s.Phone AS ShipperPhone
-                  FROM Orders o
-                  LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
-                  LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
-                  LEFT JOIN Shippers s ON o.ShipperID = s.ShipperID
-                  WHERE o.OrderID=@orderID",
-                new { orderID });
+            var sql = @"
+SELECT o.*, 
+       c.CustomerName, c.ContactName AS CustomerContactName,
+       c.Email AS CustomerEmail, c.Phone AS CustomerPhone,
+       c.Address AS CustomerAddress,
+       e.FullName AS EmployeeName,
+       s.ShipperName, s.Phone AS ShipperPhone
+FROM Orders o
+LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
+LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
+LEFT JOIN Shippers s ON o.ShipperID = s.ShipperID
+WHERE o.OrderID = @orderID";
+
+            return await connection.QueryFirstOrDefaultAsync<OrderViewInfo>(sql, new { orderID });
         }
 
+        // =====================================================
+        // THÊM ĐƠN HÀNG
+        // =====================================================
         public async Task<int> AddAsync(Order data)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            string sql = @"INSERT INTO Orders
-                          (CustomerID,OrderTime,DeliveryProvince,DeliveryAddress,
-                           EmployeeID,AcceptTime,ShipperID,ShippedTime,FinishedTime,Status)
-                          VALUES
-                          (@CustomerID,@OrderTime,@DeliveryProvince,@DeliveryAddress,
-                           @EmployeeID,@AcceptTime,@ShipperID,@ShippedTime,@FinishedTime,@Status);
-                          SELECT SCOPE_IDENTITY();";
+            var sql = @"
+INSERT INTO Orders(CustomerID, OrderTime, DeliveryProvince, DeliveryAddress, Status)
+VALUES(@CustomerID, @OrderTime, @DeliveryProvince, @DeliveryAddress, @Status);
+
+SELECT CAST(SCOPE_IDENTITY() AS INT)";
 
             return await connection.ExecuteScalarAsync<int>(sql, data);
         }
 
+        // =====================================================
+        // CẬP NHẬT ĐƠN HÀNG
+        // =====================================================
         public async Task<bool> UpdateAsync(Order data)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            string sql = @"UPDATE Orders
-                           SET CustomerID=@CustomerID,
-                               DeliveryProvince=@DeliveryProvince,
-                               DeliveryAddress=@DeliveryAddress,
-                               EmployeeID=@EmployeeID,
-                               AcceptTime=@AcceptTime,
-                               ShipperID=@ShipperID,
-                               ShippedTime=@ShippedTime,
-                               FinishedTime=@FinishedTime,
-                               Status=@Status
-                           WHERE OrderID=@OrderID";
+            var sql = @"
+UPDATE Orders
+SET CustomerID = @CustomerID,
+    DeliveryProvince = @DeliveryProvince,
+    DeliveryAddress = @DeliveryAddress,
+    EmployeeID = @EmployeeID,
+    AcceptTime = @AcceptTime,
+    ShipperID = @ShipperID,
+    ShippedTime = @ShippedTime,
+    FinishedTime = @FinishedTime,
+    Status = @Status
+WHERE OrderID = @OrderID";
 
             return await connection.ExecuteAsync(sql, data) > 0;
         }
 
+        // =====================================================
+        // XÓA ĐƠN HÀNG
+        // =====================================================
         public async Task<bool> DeleteAsync(int orderID)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            await connection.ExecuteAsync(
-                "DELETE FROM OrderDetails WHERE OrderID=@orderID",
-                new { orderID });
+            var sql = "DELETE FROM Orders WHERE OrderID = @orderID";
 
-            return await connection.ExecuteAsync(
-                "DELETE FROM Orders WHERE OrderID=@orderID",
-                new { orderID }) > 0;
+            return await connection.ExecuteAsync(sql, new { orderID }) > 0;
         }
 
+        // =====================================================
+        // LẤY DANH SÁCH CHI TIẾT ĐƠN HÀNG
+        // =====================================================
         public async Task<List<OrderDetailViewInfo>> ListDetailsAsync(int orderID)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            var data = await connection.QueryAsync<OrderDetailViewInfo>(
-                @"SELECT od.*,
-                         p.ProductName,
-                         p.Unit,
-                         p.Photo
-                  FROM OrderDetails od
-                  JOIN Products p ON od.ProductID = p.ProductID
-                  WHERE od.OrderID=@orderID",
-                new { orderID });
+            var sql = @"
+SELECT d.*, p.ProductName, p.Unit, p.Photo
+FROM OrderDetails d
+JOIN Products p ON d.ProductID = p.ProductID
+WHERE d.OrderID = @orderID";
 
+            var data = await connection.QueryAsync<OrderDetailViewInfo>(sql, new { orderID });
             return data.ToList();
         }
 
+        // =====================================================
+        // LẤY 1 CHI TIẾT ĐƠN HÀNG
+        // =====================================================
         public async Task<OrderDetailViewInfo?> GetDetailAsync(int orderID, int productID)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            return await connection.QueryFirstOrDefaultAsync<OrderDetailViewInfo>(
-                @"SELECT od.*,
-                         p.ProductName,
-                         p.Unit,
-                         p.Photo
-                  FROM OrderDetails od
-                  JOIN Products p ON od.ProductID = p.ProductID
-                  WHERE od.OrderID=@orderID AND od.ProductID=@productID",
-                new { orderID, productID });
+            var sql = @"
+SELECT d.*, p.ProductName, p.Unit, p.Photo
+FROM OrderDetails d
+JOIN Products p ON d.ProductID = p.ProductID
+WHERE d.OrderID = @orderID AND d.ProductID = @productID";
+
+            return await connection.QueryFirstOrDefaultAsync<OrderDetailViewInfo>(sql, new { orderID, productID });
         }
 
+        // =====================================================
+        // THÊM CHI TIẾT ĐƠN HÀNG
+        // =====================================================
         public async Task<bool> AddDetailAsync(OrderDetail data)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            string sql = @"INSERT INTO OrderDetails
-                          (OrderID,ProductID,Quantity,SalePrice)
-                          VALUES
-                          (@OrderID,@ProductID,@Quantity,@SalePrice)";
+            var sql = @"
+INSERT INTO OrderDetails(OrderID, ProductID, Quantity, SalePrice)
+VALUES(@OrderID, @ProductID, @Quantity, @SalePrice)";
 
             return await connection.ExecuteAsync(sql, data) > 0;
         }
 
+        // =====================================================
+        // CẬP NHẬT CHI TIẾT ĐƠN HÀNG
+        // =====================================================
         public async Task<bool> UpdateDetailAsync(OrderDetail data)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            string sql = @"UPDATE OrderDetails
-                           SET Quantity=@Quantity,
-                               SalePrice=@SalePrice
-                           WHERE OrderID=@OrderID
-                           AND ProductID=@ProductID";
+            var sql = @"
+UPDATE OrderDetails
+SET Quantity = @Quantity,
+    SalePrice = @SalePrice
+WHERE OrderID = @OrderID
+AND ProductID = @ProductID";
 
             return await connection.ExecuteAsync(sql, data) > 0;
         }
 
+        // =====================================================
+        // XÓA CHI TIẾT ĐƠN HÀNG
+        // =====================================================
         public async Task<bool> DeleteDetailAsync(int orderID, int productID)
         {
             using var connection = new SqlConnection(_connectionString);
 
-            return await connection.ExecuteAsync(
-                @"DELETE FROM OrderDetails
-                  WHERE OrderID=@orderID
-                  AND ProductID=@productID",
-                new { orderID, productID }) > 0;
+            var sql = @"
+DELETE FROM OrderDetails
+WHERE OrderID = @orderID
+AND ProductID = @productID";
+
+            return await connection.ExecuteAsync(sql, new { orderID, productID }) > 0;
         }
     }
 }

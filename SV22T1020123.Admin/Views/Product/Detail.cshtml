@@ -1,0 +1,97 @@
+﻿@{
+    ViewBag.Title = "Chi tiết mặt hàng";
+}
+
+<div class="row justify-content-center">
+    <div class="col-md-10">
+        <div class="card card-outline card-info">
+
+            <div class="card-header">
+                <h5 class="card-title mb-0">
+                    <i class="bi bi-eye"></i> Thông tin chi tiết mặt hàng
+                </h5>
+            </div>
+
+            <div class="card-body">
+
+                <!-- ===== THÔNG TIN CƠ BẢN ===== -->
+                <div class="row mb-2">
+                    <div class="col-sm-3 fw-semibold">Tên mặt hàng:</div>
+                    <div class="col-sm-9">Tivi Samsung 55"</div>
+                </div>
+
+                <div class="row mb-2">
+                    <div class="col-sm-3 fw-semibold">Loại hàng:</div>
+                    <div class="col-sm-9">Điện tử</div>
+                </div>
+
+                <div class="row mb-2">
+                    <div class="col-sm-3 fw-semibold">Nhà cung cấp:</div>
+                    <div class="col-sm-9">Công ty ABC</div>
+                </div>
+
+                <div class="row mb-2">
+                    <div class="col-sm-3 fw-semibold">Giá bán:</div>
+                    <div class="col-sm-9 text-danger fw-bold">
+                        12.000.000 VNĐ
+                    </div>
+                </div>
+
+                <div class="row mb-3">
+                    <div class="col-sm-3 fw-semibold">Mô tả:</div>
+                    <div class="col-sm-9">
+                        Tivi màn hình lớn, độ phân giải cao, bảo hành 24 tháng.
+                    </div>
+                </div>
+
+                <hr />
+
+                <!-- ===== THUỘC TÍNH ===== -->
+                <h6 class="fw-bold">Thuộc tính</h6>
+                <table class="table table-bordered">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Tên</th>
+                            <th>Giá trị</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Màu sắc</td>
+                            <td>Đen</td>
+                        </tr>
+                        <tr>
+                            <td>Kích thước</td>
+                            <td>55 inch</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <!-- ===== HÌNH ẢNH ===== -->
+                <h6 class="fw-bold mt-3">Hình ảnh</h6>
+                <div class="row">
+                    <div class="col-md-3 text-center">
+                        <img src="/images/sample.jpg"
+                             class="img-thumbnail mb-2" />
+                    </div>
+                    <div class="col-md-3 text-center">
+                        <img src="/images/sample.jpg"
+                             class="img-thumbnail mb-2" />
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- ===== FOOTER ===== -->
+            <div class="card-footer d-flex justify-content-end">
+                <a href="/Product" class="btn btn-secondary me-2">
+                    Quay lại
+                </a>
+                <a href="/Product/Edit/1" class="btn btn-warning">
+                    <i class="bi bi-pencil"></i> Chỉnh sửa
+                </a>
+            </div>
+
+        </div>
+    </div>
+</div>

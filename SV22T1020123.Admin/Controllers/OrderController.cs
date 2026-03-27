@@ -1,155 +1,160 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-namespace SV22T1020123.Admin.Controllers
+namespace SV22T1020123.Web.Controllers
 {
-    /// <summary>
-    /// Giao diện nhập đầu vào tìm kiếm và hiển thị kết quả tìm kiếm đơn hàng
-    /// </summary>
     public class OrderController : Controller
     {
-        /// <summary>
-        /// Hiển thị danh sách đơn hàng
-        /// </summary>
-        /// <returns></returns>
+      /// <summary>
+      /// Màn hình hiển thị danh sách đơn hàng
+      /// </summary>
+      /// <returns></returns>
         public IActionResult Index()
         {
             ViewBag.Title = "Danh sách đơn hàng";
-            return View();
+            return View(); // Views/Order/Index.cshtml
         }
 
-        /// <summary>
-        /// Tìm kiếm, hiển thị danh sách đơn hàng
-        /// </summary>
-        /// <returns></returns>
-        public async Task<IActionResult> Search()
+     /// <summary>
+     /// Tìm kiếm đơn hàng
+     /// </summary>
+     /// <param name="keyword"></param>
+     /// <returns></returns>
+        public IActionResult Search(string? keyword)
         {
-            await Task.Delay(3000);
-            return PartialView();
+            ViewBag.Title = "Tìm kiếm đơn hàng";
+            ViewBag.Keyword = keyword;
+            return View(); // Views/Order/Search.cshtml
         }
-
         /// <summary>
-        /// Tạo mới đơn hàng
+        /// Tạo đơn hàng
         /// </summary>
         /// <returns></returns>
         public IActionResult Create()
         {
             ViewBag.Title = "Tạo đơn hàng";
-            return View();
+            return View(); // Views/Order/Create.cshtml
         }
 
-        /// <summary>
-        /// Hiển thị chi tiết đơn hàng
-        /// </summary>
-        /// <param name="id">Mã đơn hàng cần xem chi tiết</param>
-        /// <returns></returns>
+        // GET: /Order/Detail/{id}
         public IActionResult Detail(int id)
         {
             ViewBag.Title = "Chi tiết đơn hàng";
-            return View();
+            ViewBag.OrderId = id;
+            return View(); // Views/Order/Detail.cshtml
         }
-
-        // ================== CART ITEM ==================
-
         /// <summary>
-        /// Cập nhật sản phẩm trong đơn hàng
+        /// 
         /// </summary>
-        /// <param name="id">Mã đơn hàng cần cập nhật</param>
-        /// <param name="productId">Mã sản phẩm cần cập nhật trong đơn hàng</param>
+        /// <param name="id"></param>
+        /// <param name="productId"></param>
         /// <returns></returns>
         public IActionResult EditCartItem(int id, int productId)
         {
-            ViewBag.Title = "Cập nhật mặt hàng trong đơn";
-            return View();
+            ViewBag.Title = "Cập nhật sản phẩm trong giỏ";
+            ViewBag.OrderId = id;
+            ViewBag.ProductId = productId;
+            return View(); // Views/Order/EditCartItem.cshtml
         }
 
         /// <summary>
-        /// Xóa sản phẩm có trong giỏ hàng
+        /// Hiển thị trang xác nhận xóa một sản phẩm khỏi giỏ hàng của đơn.
+        /// Route: /Order/DeleteCartItem/{id}?productId={productId}
+        /// View: Views/Order/DeleteCartItem.cshtml
         /// </summary>
-        /// <param name="id">Mã đơn hàng cần xóa sản phẩm</param>
-        /// <param name="productId">Mã sản phẩm cần xóa khỏi đơn hàng</param>
-        /// <returns></returns>
+        /// <param name="id">Mã đơn hàng (OrderId).</param>
+        /// <param name="productId">Mã sản phẩm cần xóa khỏi giỏ hàng.</param>
         public IActionResult DeleteCartItem(int id, int productId)
         {
-            ViewBag.Title = "Xóa mặt hàng khỏi đơn";
-            return View();
+            ViewBag.Title = "Xóa sản phẩm khỏi giỏ";
+            ViewBag.OrderId = id;
+            ViewBag.ProductId = productId;
+            return View(); // Views/Order/DeleteCartItem.cshtml
         }
 
         /// <summary>
-        /// Xóa toàn bộ sản trong giỏ hàng
+        /// Xóa toàn bộ giỏ hàng
         /// </summary>
         /// <returns></returns>
         public IActionResult ClearCart()
         {
             ViewBag.Title = "Xóa toàn bộ giỏ hàng";
-            return View();
+            return View(); // Views/Order/ClearCart.cshtml
         }
 
-        // ================== TRẠNG THÁI ĐƠN HÀNG ==================
-
         /// <summary>
-        /// Hiển thị trạng thái đươn hàng đã được duyệt
+        /// Duyệt đơn hàng
         /// </summary>
-        /// <param name="id">Mã đơn hàng được duyệt</param>
+        /// <param name="id"></param>
         /// <returns></returns>
         public IActionResult Accept(int id)
         {
             ViewBag.Title = "Duyệt đơn hàng";
-            return View();
+            ViewBag.OrderId = id;
+            return View(); // Views/Order/Accept.cshtml
         }
 
-        /// <summary>
-        /// Hiển thị đơn hàng đang được giao
-        /// </summary>
-        /// <param name="id">Mã đơn hàng đang được giao</param>
-        /// <returns></returns>
+       /// <summary>
+       /// Giao hàng
+       /// </summary>
+       /// <param name="Mã shipper"></param>
+       /// <returns></returns>
         public IActionResult Shipping(int id)
         {
-            ViewBag.Title = "Đang giao hàng";
-            return View();
+            ViewBag.Title = "Giao hàng";
+            ViewBag.OrderId = id;
+            return View(); // Views/Order/Shipping.cshtml
         }
-
         /// <summary>
-        /// Hiển thị trạng thái đơn hàng đã giao hàng hoàn tất
+        /// Hoàn tất đơn hàng
         /// </summary>
-        /// <param name="id">Mã đơn hàng đã được giao hoàn tất</param>
+        /// <param name="id">Mã đơn hàng cần được hoàn tất</param>
         /// <returns></returns>
         public IActionResult Finish(int id)
         {
             ViewBag.Title = "Hoàn tất đơn hàng";
-            return View();
+            ViewBag.OrderId = id;
+            return View(); // Views/Order/Finish.cshtml
         }
 
-        /// <summary>
-        /// Hiển thị đơn hàng bị từ chối
-        /// </summary>
-        /// <param name="id">Mã đơn hàng bị từ chối</param>
-        /// <returns></returns>
+       /// <summary>
+       /// Từ chối đơn hàng
+       /// </summary>
+       /// <param name="id">Mã đơn hàng cần từ chối</param>
+       /// <returns></returns>
         public IActionResult Reject(int id)
         {
             ViewBag.Title = "Từ chối đơn hàng";
-            return View();
+            ViewBag.OrderId = id;
+            return View(); // Views/Order/Reject.cshtml
         }
 
-        /// <summary>
-        /// Hiển thị đơn hàng bị hủy
-        /// </summary>
-        /// <param name="id">Mã đơn hàng đã bị hủy</param>
-        /// <returns></returns>
+        // GET: /Order/Cancel/{id}
         public IActionResult Cancel(int id)
         {
             ViewBag.Title = "Hủy đơn hàng";
-            return View();
+            ViewBag.OrderId = id;
+            return View(); // Views/Order/Cancel.cshtml
         }
 
-        /// <summary>
-        /// Hiển thị xóa đơn hàng
-        /// </summary>
-        /// <param name="id">Mã đơn hàng cần xóa</param>
-        /// <returns></returns>
+        // GET: /Order/Delete/{id}
         public IActionResult Delete(int id)
         {
             ViewBag.Title = "Xóa đơn hàng";
-            return View();
+            ViewBag.OrderId = id;
+            return View(); // Views/Order/Delete.cshtml
         }
+
+        // ========= NOTE =========
+        // View DeleteItem.cshtml có sẵn trong thư mục nhưng route bạn đưa KHÔNG có.
+        // Nếu sau này bạn cần dùng DeleteItem, mở lại 2 dòng dưới đây:
+
+        // GET: /Order/DeleteItem/{id}?productId={productId}
+        // public IActionResult DeleteItem(int id, int productId)
+        // {
+        //     ViewBag.Title = "Xóa mặt hàng trong đơn";
+        //     ViewBag.OrderId = id;
+        //     ViewBag.ProductId = productId;
+        //     return View(); // Views/Order/DeleteItem.cshtml
+        // }
     }
 }

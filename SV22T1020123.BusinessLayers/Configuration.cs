@@ -1,25 +1,30 @@
-﻿namespace SV22T1020123.BusinessLayers
+﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text;
+using System.Threading.Tasks;
+
+namespace SV22T1020123.BusinessLayers
 {
     /// <summary>
-    /// Lớp lưu giữ thông tin cấu hình cần sử dụng cho BussinessLayers
+    /// Lớp lưu giữ thông tin cấu hình sử dụng cho BusinessLayer
     /// </summary>
     public static class Configuration
     {
         private static string _connectionString = "";
-
         /// <summary>
-        /// Khởi tạo cấu hình cho BusinessLayers
-        /// (Hàm này phải được gọi trước khi chạy ứng dụng)
+        /// Khởi tạo cấu hình cho BusinessLayer
+        /// (Hàm này phải gọi trước khi chạy ứng dụng)     
         /// </summary>
         /// <param name="connectionString"></param>
         public static void Initialize(string connectionString)
         {
-            _connectionString = connectionString;
+                _connectionString = connectionString;
         }
-
         /// <summary>
-        /// Thuộc tính trả về chuỗi tham số kết nối đến cơ sở dữ liệu
+        /// Lấy chuỗi tham số kết nối đến CSDL sử dụng trong hệ thống
         /// </summary>
         public static string ConnectionString => _connectionString;
+
     }
 }

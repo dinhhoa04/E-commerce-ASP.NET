@@ -1,74 +1,94 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SV22T1020123.BusinessLayers;
+using SV22T1020123.Models.HR;
 
 namespace SV22T1020123.Admin.Controllers
 {
     /// <summary>
-    /// Cung cấp các chức năng quản lý dữ liệu liên quan đến Nhân viên
+    /// Các chức năng của quản lý nhân viên 
     /// </summary>
     public class EmployeeController : Controller
     {
-        /// <summary>
-        /// Tìm kiếm và hiển thị danh sách nhân viên
-        /// </summary>
-        /// <returns></returns>
+
         public IActionResult Index()
         {
-            ViewBag.Title = "Danh sách nhân viên";
             return View();
         }
 
-        /// <summary>
-        /// Bổ sung nhân viên
-        /// </summary>
-        /// <returns></returns>
         public IActionResult Create()
         {
-            ViewBag.Title = "Thêm nhân viên";
-            return View("Edit");
+            ViewBag.Title = "Bổ sung nhân viên";
+            var model = new Employee()
+            {
+                EmployeeID = 0,
+                IsWorking = true
+            };
+            return View("Edit", model);
         }
 
-        /// <summary>
-        /// Cập nhật thông tin nhân viên
-        /// </summary>
-        /// <param name="id">Mã nhân viên cần cập nhật thông tin</param>
-        /// <returns></returns>
-        public IActionResult Edit(int id) 
+        public async Task<IActionResult> Edit(int id)
         {
-            ViewBag.Title = "Cập nhật nhân viên";
-            return View();
+            ViewBag.Title = "Cập nhật thông tin nhân viên";
+            var model = await HRDataService.GetEmployeeAsync(id);
+            if (model == null)
+                return RedirectToAction("Index");
+
+            return View(model);
         }
 
-        /// <summary>
-        /// Xóa nhân viên
-        /// </summary>
-        /// <param name="id">Mã nhân viên cần xóa</param>
-        /// <returns></returns>
-        public IActionResult Delete(int id)
+        [HttpPost]
+        public async Task<IActionResult> SaveData(Employee data, IFormFile? uploadPhoto)
         {
-            ViewBag.Title = "Xóa nhân viên";
-            return View();
-        }
+            try
+            {
+                ViewBag.Title = data.EmployeeID == 0 ? "Bổ sung nhân viên" : "Cập nhật thông tin nhân viên";
 
-        /// <summary>
-        /// Thay dổi mật khẩu cho account nhân viên
-        /// </summary>
-        /// <param name="id">Mã nhân viên có account cần thay dổi mật khẩu</param>
-        /// <returns></returns>
-        public IActionResult ChangePassword(int id)
-        {
-            ViewBag.Title = "Đổi mật khẩu nhân viên";
-            return View();
-        }
+                //Kiểm tra dữ liệu đầu vào: FullName và Email là bắt buộc, Email chưa được sử dụng bởi nhân viên khác
+                if (string.IsNullOrWhiteSpace(data.FullName))
+                    ModelState.AddModelError(nameof(data.FullName), "Vui lòng nhập họ tên nhân viên");
 
-        /// <summary>
-        /// Thay đổi vai trò nhân viên
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public IActionResult ChangeRole(int id)
-        {
-            ViewBag.Title = "Thay đổi vai trò của nhân viên";
-            return View();
+                if (string.IsNullOrWhiteSpace(data.Email))
+                    ModelState.AddModelError(nameof(data.Email), "Vui lòng nhập email nhân viên");
+                else if (!await HRDataService.ValidateEmployeeEmailAsync(data.Email, data.EmployeeID))
+                    ModelState.AddModelError(nameof(data.Email), "Email đã được sử dụng bởi nhân viên khác");
+
+                if (!ModelState.IsValid)
+                    return View("Edit", data);
+
+                //Xử lý upload ảnh
+                if (uploadPhoto != null)
+                {
+                    var fileName = $"{Guid.NewGuid()}{Path.GetExtension(uploadPhoto.FileName)}";
+                    var filePath = Path.Combine(ApplicationContext.WWWRootPath, "images/employees", fileName);
+                    using (var stream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await uploadPhoto.CopyToAsync(stream);
+                    }
+                    data.Photo = fileName;
+                }
+
+                //Tiền xử lý dữ liệu trước khi lưu vào database
+                if (string.IsNullOrEmpty(data.Address)) data.Address = "";
+                if (string.IsNullOrEmpty(data.Phone)) data.Phone = "";
+                if (string.IsNullOrEmpty(data.Photo)) data.Photo = "nophoto.png";
+
+                //Lưu dữ liệu vào database (bổ sung hoặc cập nhật)
+                if (data.EmployeeID == 0)
+                {
+                    await HRDataService.AddEmployeeAsync(data);
+                }
+                else
+                {
+                    await HRDataService.UpdateEmployeeAsync(data);
+                }
+                return RedirectToAction("Index");
+            }
+            catch //(Exception ex)
+            {
+                //TODO: Ghi log lỗi căn cứ vào ex.Message và ex.StackTrace
+                ModelState.AddModelError(string.Empty, "Hệ thống đang bận hoặc dữ liệu không hợp lệ. Vui lòng kiểm tra dữ liệu hoặc thử lại sau");
+                return View("Edit", data);
+            }
         }
     }
 }

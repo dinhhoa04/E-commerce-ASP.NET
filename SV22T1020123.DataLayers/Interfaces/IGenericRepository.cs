@@ -1,5 +1,4 @@
 ﻿using SV22T1020123.Models.Common;
-using SV22T1020123.Models.Common;
 
 namespace SV22T1020123.DataLayers.Interfaces
 {

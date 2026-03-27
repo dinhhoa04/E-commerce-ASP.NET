@@ -1,9 +1,12 @@
+using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using SV22T1020123.Admin.Models;
-using System.Diagnostics;
 
 namespace SV22T1020123.Admin.Controllers
 {
+    /// <summary>
+    /// các ch?c n?ng c?a trang ch?
+    /// </summary>
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;
@@ -12,7 +15,7 @@ namespace SV22T1020123.Admin.Controllers
         {
             _logger = logger;
         }
-
+        //Trang ch?/dashboard
         public IActionResult Index()
         {
             return View();

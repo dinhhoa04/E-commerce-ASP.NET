@@ -1,24 +1,55 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SV22T1020123.Models.Common;
+using SV22T1020123.BusinessLayers;
+using System.Threading.Tasks;
 
 namespace SV22T1020123.Admin.Controllers
 {
     /// <summary>
-    /// cung cấp các chức năng quản lý dữ liệu liên quan đến nhà cung cấp
+    /// Cung cấp các chức năng quản lý dữ liệu liên quan đến nhà cung cấp
     /// </summary>
     public class SupplierController : Controller
     {
         /// <summary>
-        /// Tìm kiếm và hiển thị danh sách nhà cung cấp
+        /// Tên biến dùng để lưu điều kiện tìm kiếm khách hàng trong session
         /// </summary>
-        /// <returns></returns>
-        public IActionResult Index()
-        {
-            ViewBag.Title = "Danh sách nhà cung cấp";
-            return View();
-        }
+        private const string SUPPLIER_SEARCH = "SupplierSearchInput";
 
         /// <summary>
-        /// Bổ sung nhà cung cấp mới
+        /// Nhập đầu vào tìm kiếm -> Hiển thị danh sách khách hàng
+        /// </summary>
+        /// <returns></returns>k
+        /// <returns></returns>k
+        public IActionResult Index()
+        {
+            var input = ApplicationContext.GetSessionData<PaginationSearchInput>(SUPPLIER_SEARCH);
+            if (input == null)
+            {
+                input = new PaginationSearchInput()
+                {
+                    Page = 1,
+                    PageSize = ApplicationContext.PageSize,
+                    SearchValue = ""
+                };
+            }
+
+            return View(input);
+        }
+        /// <summary>
+        /// Tìm kiếm và trả về kết quả
+        /// </summary>
+        /// <returns></returns>
+        public async Task<IActionResult> Search(PaginationSearchInput input)
+        {
+            var result = await PartnerDataService.ListSuppliersAsync(input);
+            ApplicationContext.SetSessionData(SUPPLIER_SEARCH, input);
+            return View(result);
+        }
+
+
+
+        /// <summary>
+        /// Tạo mới 1 nhà cung cấp
         /// </summary>
         /// <returns></returns>
         public IActionResult Create()
@@ -26,20 +57,18 @@ namespace SV22T1020123.Admin.Controllers
             ViewBag.Title = "Bổ sung nhà cung cấp";
             return View("Edit");
         }
-
         /// <summary>
-        /// Cập nhật thông tin nhà cung cấp
+        /// Chỉnh sửa 1 nhà cung cấp
         /// </summary>
-        /// <param name="id">Mã nhà cung cấp cần cập nhật thông tin</param>
+        /// <param name="id">Mã nhà cung cấp cần chỉnh sửa</param>
         /// <returns></returns>
-        public IActionResult Edit(int id) 
-        { 
+        public IActionResult Edit(int id)
+        {
             ViewBag.Title = "Cập nhật thông tin nhà cung cấp";
             return View();
         }
-
         /// <summary>
-        /// Xóa một nhà cung cấp
+        /// Xóa 1 nhà cung cấp
         /// </summary>
         /// <param name="id">Mã nhà cung cấp cần xóa</param>
         /// <returns></returns>
@@ -47,6 +76,5 @@ namespace SV22T1020123.Admin.Controllers
         {
             return View();
         }
-
     }
 }

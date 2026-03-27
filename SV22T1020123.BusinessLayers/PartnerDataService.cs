@@ -117,7 +117,7 @@ public static class PartnerDataService
     /// <returns>
     /// Danh sách khách hàng phù hợp với điều kiện tìm kiếm.
     /// </returns>
-    public static async Task<PagedResult<Customer>> ListCustomerAsync(PaginationSearchInput input)
+    public static async Task<PagedResult<Customer>> ListCustomersAsync(PaginationSearchInput input)
     {
         return await customerDB.ListAsync(input);
     }
