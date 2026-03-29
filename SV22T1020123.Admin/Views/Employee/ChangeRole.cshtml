@@ -1,7 +1,7 @@
-﻿@{
+﻿@model Employee
+@{
     ViewBag.Title = "Phân quyền nhân viên";
 }
-
 @section PageToolBar {
     <button type="submit" form="formChangeRole" class="btn btn-primary">
         <i class="bi bi-shield-check me-1"></i>
@@ -22,27 +22,33 @@
                     Phân quyền cho nhân viên
                 </h5>
             </div>
-
             <div class="card-body">
-                <form id="formChangeRole" method="post">
+                <form id="formChangeRole" method="post"
+                      action="~/Employee/SaveRole">
+                    <input type="hidden" name="EmployeeID" value="@Model.EmployeeID" />
 
                     <fieldset class="mb-4">
                         <legend class="fs-6 text-muted mb-3">
                             <i class="bi bi-person me-1"></i>
                             Thông tin nhân viên
                         </legend>
-
                         <dl class="row mb-0">
                             <dt class="col-sm-3">Họ và tên</dt>
-                            <dd class="col-sm-9">Nguyễn Văn C</dd>
+                            <dd class="col-sm-9">@Model.FullName</dd>
 
                             <dt class="col-sm-3">Email</dt>
-                            <dd class="col-sm-9">nguyenvanc@company.com</dd>
+                            <dd class="col-sm-9">@Model.Email</dd>
 
                             <dt class="col-sm-3">Trạng thái</dt>
                             <dd class="col-sm-9">
-                                <span class="badge bg-success">Đang làm việc</span>
-                                <!-- <span class="badge bg-secondary">Đã nghỉ việc</span> -->
+                                @if (Model.IsWorking)
+                                {
+                                    <span class="badge bg-success">Đang làm việc</span>
+                                }
+                                else
+                                {
+                                    <span class="badge bg-secondary">Đã nghỉ việc</span>
+                                }
                             </dd>
                         </dl>
                     </fieldset>
@@ -52,7 +58,6 @@
                             <i class="bi bi-shield-lock me-1"></i>
                             Danh sách quyền
                         </legend>
-
                         <div class="table-responsive">
                             <table class="table table-bordered table-hover align-middle">
                                 <thead class="table-secondary">
@@ -65,28 +70,32 @@
                                 <tbody>
                                     <tr>
                                         <td class="text-center">
-                                            <input class="form-check-input" type="checkbox" checked />
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="Roles" value="Customer" />
                                         </td>
                                         <td>Quản lý khách hàng</td>
                                         <td>Thêm, sửa, xóa và xem danh sách khách hàng</td>
                                     </tr>
                                     <tr>
                                         <td class="text-center">
-                                            <input class="form-check-input" type="checkbox" />
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="Roles" value="Product" />
                                         </td>
                                         <td>Quản lý mặt hàng</td>
                                         <td>Quản lý thông tin sản phẩm, giá bán, trạng thái</td>
                                     </tr>
                                     <tr>
                                         <td class="text-center">
-                                            <input class="form-check-input" type="checkbox" />
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="Roles" value="Order" />
                                         </td>
                                         <td>Quản lý đơn hàng</td>
                                         <td>Tạo, xử lý và theo dõi đơn hàng</td>
                                     </tr>
                                     <tr>
                                         <td class="text-center">
-                                            <input class="form-check-input" type="checkbox" />
+                                            <input class="form-check-input" type="checkbox"
+                                                   name="Roles" value="Admin" />
                                         </td>
                                         <td>Quản trị hệ thống</td>
                                         <td>Quản lý người dùng, phân quyền, cấu hình hệ thống</td>
@@ -95,7 +104,6 @@
                             </table>
                         </div>
                     </fieldset>
-
                 </form>
             </div>
         </div>

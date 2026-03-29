@@ -101,8 +101,8 @@ namespace SV22T1020123.Web.Controllers
                     ModelState.AddModelError("CustomerName", "Chi mi,sao không nhập tên hợp lệ");
                 if (string.IsNullOrWhiteSpace(data.Email))
                     ModelState.AddModelError(nameof(data.Email), "Email không được để trống");
-                else if (await PartnerDataService.ValidatelCustomerEmailAsync(data.Email, data.CustomerID))
-                    ModelState.AddModelError(nameof(data.Email), "Email naỳ bị trùng");
+                else if (!await PartnerDataService.ValidatelCustomerEmailAsync(data.Email, data.CustomerID))
+                    ModelState.AddModelError(nameof(data.Email), "Email này bị trùng");
                 if (string.IsNullOrEmpty(data.Province))
                     ModelState.AddModelError(nameof(data.Province), "Vui lòng chọn tỉnh thành");
                 if (!ModelState.IsValid)

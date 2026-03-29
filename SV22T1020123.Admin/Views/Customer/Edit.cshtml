@@ -68,9 +68,10 @@
 
                         <div class="col-md-7 mb-3">
                             <label class="form-label">Email</label>
-                            <input type="email"asp-for="Email"
+                            <input type="email" asp-for="Email"
                                    class="form-control"
                                    placeholder="Nhập email" />
+                            <span asp-validation-for="Email" class="text-danger"></span>
                         </div>
                     </div>
 
