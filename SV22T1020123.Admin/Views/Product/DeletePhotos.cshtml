@@ -1,28 +1,56 @@
-﻿@{
-    ViewBag.Title = "Xóa hình ảnh";
+﻿@model ProductPhoto
+@{
+    ViewBag.Title = "Xóa ảnh";
+}
+@section PageToolBar {
+    <button type="submit" form="formDelete" class="btn btn-danger">
+        <i class="bi bi-trash me-1"></i>
+        Xóa
+    </button>
+    <a href="~/Product/Edit/@Model.ProductID" class="btn btn-secondary ms-1">
+        <i class="bi bi-arrow-left"></i>
+        Quay lại
+    </a>
 }
 
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card card-outline card-danger">
-            <div class="card-header">
-                <h5 class="card-title mb-0">Xóa hình ảnh</h5>
+<div class="card card-danger card-outline">
+    <div class="card-header">
+        <h5 class="card-title mb-0 text-danger">
+            <i class="bi bi-exclamation-triangle me-2"></i>
+            Xác nhận xóa ảnh
+        </h5>
+    </div>
+    <div class="card-body">
+        <form id="formDelete" method="post"
+              action="~/Product/DeletePhotos/@Model.ProductID?photoID=@Model.PhotoID">
+            <div class="alert alert-warning">
+                <i class="bi bi-info-circle me-2"></i>
+                Bạn có chắc chắn muốn xóa ảnh này không?
             </div>
-
-            <div class="card-body text-center">
-                <div class="alert alert-warning">
-                    Bạn có chắc chắn muốn xóa hình ảnh này không?
-                </div>
-
-                <img src="/images/sample.jpg"
-                     class="img-thumbnail mb-2"
-                     style="max-width:200px;" />
+            <div class="text-center mb-3">
+                <img src="~/images/products/@Model.Photo"
+                     class="img-thumbnail"
+                     style="max-height:200px;" />
             </div>
+            <dl class="row">
+                <dt class="col-sm-3">Mô tả</dt>
+                <dd class="col-sm-9">@Model.Description</dd>
 
-            <div class="card-footer d-flex justify-content-end">
-                <button class="btn btn-secondary me-2">Bỏ qua</button>
-                <button class="btn btn-danger">Xóa</button>
-            </div>
-        </div>
+                <dt class="col-sm-3">Thứ tự</dt>
+                <dd class="col-sm-9">@Model.DisplayOrder</dd>
+
+                <dt class="col-sm-3">Hiển thị</dt>
+                <dd class="col-sm-9">
+                    @if (Model.IsHidden)
+                    {
+                        <span class="badge bg-secondary">Ẩn</span>
+                    }
+                    else
+                    {
+                        <span class="badge bg-success">Hiện</span>
+                    }
+                </dd>
+            </dl>
+        </form>
     </div>
 </div>
