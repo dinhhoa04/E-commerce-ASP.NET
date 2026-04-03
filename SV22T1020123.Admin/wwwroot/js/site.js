@@ -117,3 +117,17 @@ function paginationSearch(event, form, page) {
 })();
 
 
+// Xử lý các thao tác đơn hàng qua modal (Accept, Reject, Cancel, Finish, Delete) bổ sung phần làm order 
+function processOrder(url) {
+    fetch(url, { method: "POST" })
+        .then(r => r.json())
+        .then(result => {
+            if (result.code <= 0) {
+                alert(result.message);
+            } else {
+                bootstrap.Modal.getInstance(
+                    document.getElementById("dialogModal")).hide();
+                reloadPage();
+            }
+        });
+}

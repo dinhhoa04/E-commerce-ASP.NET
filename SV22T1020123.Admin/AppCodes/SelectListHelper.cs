@@ -77,6 +77,25 @@ namespace SV22T1020123.Admin
             }
             return list;
         }
+        // bổ sung phần làm order 
+        public static async Task<List<SelectListItem>> Shippers()
+        {
+            var list = new List<SelectListItem>()
+    {
+        new SelectListItem() { Value = "0", Text = "-- Chọn người giao hàng --"}
+    };
+            var input = new PaginationSearchInput() { Page = 1, PageSize = 0, SearchValue = "" };
+            var result = await PartnerDataService.ListShippersAsync(input);
+            foreach (var item in result.DataItems)
+            {
+                list.Add(new SelectListItem()
+                {
+                    Value = item.ShipperID.ToString(),
+                    Text = item.ShipperName
+                });
+            }
+            return list;
+        }
 
         /// <summary>
         /// Các trạng thái của đơn hàng

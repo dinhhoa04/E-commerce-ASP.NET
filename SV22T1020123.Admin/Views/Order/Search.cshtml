@@ -1,8 +1,10 @@
-﻿@{
+﻿@model PagedResult<OrderViewInfo>
+@{
     Layout = null;
 }
+
 <div class="mb-2 text-muted">
-    Danh sách này có <strong>12</strong> đơn hàng
+    Danh sách này có <strong>@Model.RowCount</strong> đơn hàng
 </div>
 
 <div class="card">
@@ -21,20 +23,45 @@
                 </tr>
             </thead>
             <tbody>
-                @for (int i = 1; i <= 10; i++)
+                @foreach (var item in Model.DataItems)
                 {
                     <tr>
-                        <td>10/10/2025</td>
-                        <td>Nguyễn Văn A</td>
-                        <td>0912345678</td>
-                        <td>11/10/2025</td>
-                        <td>Trần Thị B</td>
-                        <td class="text-end">1,250,000</td>
-                        <td class="text-center">
-                            <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                        <td>@item.OrderTime.ToString("dd/MM/yyyy")</td>
+                        <td>@item.CustomerName</td>
+                        <td>@item.CustomerPhone</td>
+                        <td>
+                            @(item.AcceptTime.HasValue
+                                ? item.AcceptTime.Value.ToString("dd/MM/yyyy")
+                                : "")
                         </td>
-                        <td class="text-center text-nowrap">
-                            <a href="~/Order/Detail/123" class="btn btn-sm btn-primary">
+                        <td>@item.EmployeeName</td>
+                        <td class="text-end">
+                            -
+                        </td>
+                        <td class="text-center">
+                            @{
+                                var (badgeClass, statusText) = item.Status switch
+                                {
+                                    OrderStatusEnum.New =>
+                                    ("bg-warning text-dark", "Chờ duyệt"),
+                                    OrderStatusEnum.Accepted =>
+                                    ("bg-info", "Đã duyệt"),
+                                    OrderStatusEnum.Shipping =>
+                                    ("bg-primary", "Đang giao"),
+                                    OrderStatusEnum.Completed =>
+                                    ("bg-success", "Hoàn tất"),
+                                    OrderStatusEnum.Rejected =>
+                                    ("bg-danger", "Từ chối"),
+                                    OrderStatusEnum.Cancelled =>
+                                    ("bg-secondary", "Đã hủy"),
+                                    _ => ("bg-light text-dark", "Không xác định")
+                                };
+                            }
+                            <span class="badge @badgeClass">@statusText</span>
+                        </td>
+                        <td class="text-center">
+                            <a href="~/Order/Detail/@item.OrderID"
+                               class="btn btn-sm btn-primary">
                                 <i class="bi bi-receipt"></i>
                             </a>
                         </td>
@@ -43,17 +70,31 @@
             </tbody>
         </table>
     </div>
-
     <div class="card-footer">
         <ul class="pagination justify-content-center mb-0">
-            @for (int p = 1; p <= 10; p++)
+            @foreach (var p in Model.GetDisplayPages())
             {
-                <li class="page-item">
-                    <a class="page-link" href="javascript:;"
-                       onclick="paginationSearch(event, document.getElementById('formSearch'), @p)">
-                        @p
-                    </a>
-                </li>
+                if (p.IsCurrent)
+                {
+                    <li class="page-item active">
+                        <a class="page-link">@p.Page</a>
+                    </li>
+                }
+                else if (p.IsEllipsis)
+                {
+                    <li class="page-item">
+                        <a class="page-link">...</a>
+                    </li>
+                }
+                else
+                {
+                    <li class="page-item">
+                        <a class="page-link" href="javascript:;"
+                           onclick="paginationSearch(event, document.getElementById('formSearch'), @p.Page)">
+                            @p.Page
+                        </a>
+                    </li>
+                }
             }
         </ul>
     </div>

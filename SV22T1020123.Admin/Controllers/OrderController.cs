@@ -1,160 +1,263 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using SV22T1020123.Admin;
+using SV22T1020123.BusinessLayers;
+using SV22T1020123.Models.Catalog;
+using SV22T1020123.Models.Common;
+using SV22T1020123.Models.Sales;
 
 namespace SV22T1020123.Web.Controllers
 {
     public class OrderController : Controller
     {
-      /// <summary>
-      /// Màn hình hiển thị danh sách đơn hàng
-      /// </summary>
-      /// <returns></returns>
+        private const string PRODUCT_SEARCH = "SearchSellProduct";
+        private const string ORDER_SEARCH = "OrderSearchInput";
+
+        // ========== DANH SÁCH ĐƠN HÀNG ==========
+
         public IActionResult Index()
         {
-            ViewBag.Title = "Danh sách đơn hàng";
-            return View(); // Views/Order/Index.cshtml
+            var input = ApplicationContext.GetSessionData<OrderSearchInput>(ORDER_SEARCH);
+            if (input == null)
+                input = new OrderSearchInput()
+                {
+                    Page = 1,
+                    PageSize = ApplicationContext.PageSize,
+                    SearchValue = "",
+                    Status = 0,
+                    DateFrom = null,
+                    DateTo = null
+                };
+            return View(input);
         }
 
-     /// <summary>
-     /// Tìm kiếm đơn hàng
-     /// </summary>
-     /// <param name="keyword"></param>
-     /// <returns></returns>
-        public IActionResult Search(string? keyword)
+        public async Task<IActionResult> Search(OrderSearchInput input)
         {
-            ViewBag.Title = "Tìm kiếm đơn hàng";
-            ViewBag.Keyword = keyword;
-            return View(); // Views/Order/Search.cshtml
+            var result = await SalesDataService.ListOrdersAsync(input);
+            ApplicationContext.SetSessionData(ORDER_SEARCH, input);
+            return View(result);
         }
-        /// <summary>
-        /// Tạo đơn hàng
-        /// </summary>
-        /// <returns></returns>
+
+        // ========== LẬP ĐƠN HÀNG ==========
+
         public IActionResult Create()
         {
-            ViewBag.Title = "Tạo đơn hàng";
-            return View(); // Views/Order/Create.cshtml
+            ViewBag.Title = "Lập đơn hàng";
+            var input = ApplicationContext.GetSessionData<ProductSearchInput>(PRODUCT_SEARCH);
+            if (input == null)
+                input = new ProductSearchInput()
+                {
+                    Page = 1,
+                    PageSize = 5,
+                    SearchValue = ""
+                };
+            return View(input);
         }
 
-        // GET: /Order/Detail/{id}
-        public IActionResult Detail(int id)
+        public async Task<IActionResult> SearchProduct(ProductSearchInput input)
         {
-            ViewBag.Title = "Chi tiết đơn hàng";
-            ViewBag.OrderId = id;
-            return View(); // Views/Order/Detail.cshtml
-        }
-        /// <summary>
-        /// 
-        /// </summary>
-        /// <param name="id"></param>
-        /// <param name="productId"></param>
-        /// <returns></returns>
-        public IActionResult EditCartItem(int id, int productId)
-        {
-            ViewBag.Title = "Cập nhật sản phẩm trong giỏ";
-            ViewBag.OrderId = id;
-            ViewBag.ProductId = productId;
-            return View(); // Views/Order/EditCartItem.cshtml
+            var result = await CatalogDataService.ListProductsAsync(input);
+            ApplicationContext.SetSessionData(PRODUCT_SEARCH, input);
+            return View(result);
         }
 
-        /// <summary>
-        /// Hiển thị trang xác nhận xóa một sản phẩm khỏi giỏ hàng của đơn.
-        /// Route: /Order/DeleteCartItem/{id}?productId={productId}
-        /// View: Views/Order/DeleteCartItem.cshtml
-        /// </summary>
-        /// <param name="id">Mã đơn hàng (OrderId).</param>
-        /// <param name="productId">Mã sản phẩm cần xóa khỏi giỏ hàng.</param>
-        public IActionResult DeleteCartItem(int id, int productId)
+        public IActionResult ShowCart()
         {
-            ViewBag.Title = "Xóa sản phẩm khỏi giỏ";
-            ViewBag.OrderId = id;
-            ViewBag.ProductId = productId;
-            return View(); // Views/Order/DeleteCartItem.cshtml
+            var cart = ShoppingCartService.GetShoppingCart();
+            return PartialView(cart);
         }
 
-        /// <summary>
-        /// Xóa toàn bộ giỏ hàng
-        /// </summary>
-        /// <returns></returns>
+        [HttpPost]
+        public async Task<IActionResult> AddCartItem(int productID, int quantity, decimal price)
+        {
+            if (quantity <= 0)
+                return Json(new ApiResult(0, "Số lượng không hợp lệ"));
+            if (price < 0)
+                return Json(new ApiResult(0, "Giá không hợp lệ"));
+
+            var product = await CatalogDataService.GetProductAsync(productID);
+            if (product == null)
+                return Json(new ApiResult(0, "Mặt hàng không tồn tại"));
+            if (!product.IsSelling)
+                return Json(new ApiResult(0, "Mặt hàng đã ngừng bán"));
+
+            ShoppingCartService.AddCartItem(new OrderDetailViewInfo()
+            {
+                ProductID = productID,
+                Quantity = quantity,
+                SalePrice = price,
+                ProductName = product.ProductName,
+                Unit = product.Unit,
+                Photo = product.Photo ?? "nophoto.png"
+            });
+
+            return Json(new ApiResult(1));
+        }
+
+        public IActionResult EditCartItem(int productId = 0)
+        {
+            var item = ShoppingCartService.GetCartItem(productId);
+            return PartialView(item);
+        }
+
+        [HttpPost]
+        public IActionResult UpdateCartItem(int productId, int quantity, decimal salePrice)
+        {
+            if (quantity <= 0)
+                return Json(new ApiResult(0, "Số lượng không hợp lệ"));
+            if (salePrice < 0)
+                return Json(new ApiResult(0, "Giá bán không hợp lệ"));
+
+            ShoppingCartService.UpdateCartItem(productId, quantity, salePrice);
+            return Json(new ApiResult(1));
+        }
+
+        public IActionResult DeleteCartItem(int productId = 0)
+        {
+            if (Request.Method == "POST")
+            {
+                ShoppingCartService.RemoveCartItem(productId);
+                return Json(new ApiResult(1));
+            }
+            var item = ShoppingCartService.GetCartItem(productId);
+            return PartialView(item);
+        }
+
         public IActionResult ClearCart()
         {
-            ViewBag.Title = "Xóa toàn bộ giỏ hàng";
-            return View(); // Views/Order/ClearCart.cshtml
+            if (Request.Method == "POST")
+            {
+                ShoppingCartService.ClearCart();
+                return Json(new ApiResult(1));
+            }
+            return PartialView();
         }
 
-        /// <summary>
-        /// Duyệt đơn hàng
-        /// </summary>
-        /// <param name="id"></param>
-        /// <returns></returns>
-        public IActionResult Accept(int id)
+        [HttpPost]
+        public async Task<IActionResult> CreateOrder(int customerID = 0,
+    string province = "", string address = "")
         {
-            ViewBag.Title = "Duyệt đơn hàng";
-            ViewBag.OrderId = id;
-            return View(); // Views/Order/Accept.cshtml
-        }
+            var cart = ShoppingCartService.GetShoppingCart();
+            if (cart.Count == 0)
+                return Json(new ApiResult(0, "Giỏ hàng trống, không thể lập đơn hàng"));
 
-       /// <summary>
-       /// Giao hàng
-       /// </summary>
-       /// <param name="Mã shipper"></param>
-       /// <returns></returns>
-        public IActionResult Shipping(int id)
+            var order = new Order()
+            {
+                CustomerID = customerID == 0 ? null : customerID,
+                DeliveryProvince = province,
+                DeliveryAddress = address,
+            };
+
+            int orderID = await SalesDataService.AddOrderAsync(customerID, order);
+
+            foreach (var item in cart)
+            {
+                await SalesDataService.AddDetailAsync(new OrderDetail()
+                {
+                    OrderID = orderID,
+                    ProductID = item.ProductID,
+                    Quantity = item.Quantity,
+                    SalePrice = item.SalePrice,
+                });
+            }
+
+            ShoppingCartService.ClearCart();
+            return Json(new ApiResult(orderID));
+        }
+        // ========== CHI TIẾT ĐƠN HÀNG ==========
+
+        public async Task<IActionResult> Detail(int id)
         {
-            ViewBag.Title = "Giao hàng";
-            ViewBag.OrderId = id;
-            return View(); // Views/Order/Shipping.cshtml
+            var model = await SalesDataService.GetOrderAsync(id);
+            if (model == null)
+                return RedirectToAction("Index");
+            ViewBag.Details = await SalesDataService.ListDetailsAsync(id);
+            return View(model);
         }
-        /// <summary>
-        /// Hoàn tất đơn hàng
-        /// </summary>
-        /// <param name="id">Mã đơn hàng cần được hoàn tất</param>
-        /// <returns></returns>
-        public IActionResult Finish(int id)
+
+        // ========== XỬ LÝ TRẠNG THÁI ĐƠN HÀNG ==========
+
+        public async Task<IActionResult> Accept(int id)
         {
-            ViewBag.Title = "Hoàn tất đơn hàng";
-            ViewBag.OrderId = id;
-            return View(); // Views/Order/Finish.cshtml
+            if (Request.Method == "POST")
+            {
+                // TODO: lấy employeeID từ session đăng nhập
+                int employeeID = 1;
+                await SalesDataService.AcceptOrderAsync(id, employeeID);
+                return Json(new ApiResult(1));
+            }
+            var model = await SalesDataService.GetOrderAsync(id);
+            if (model == null)
+                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            return PartialView(model);
         }
 
-       /// <summary>
-       /// Từ chối đơn hàng
-       /// </summary>
-       /// <param name="id">Mã đơn hàng cần từ chối</param>
-       /// <returns></returns>
-        public IActionResult Reject(int id)
+        public async Task<IActionResult> Reject(int id)
         {
-            ViewBag.Title = "Từ chối đơn hàng";
-            ViewBag.OrderId = id;
-            return View(); // Views/Order/Reject.cshtml
+            if (Request.Method == "POST")
+            {
+                int employeeID = 1;
+                await SalesDataService.RejectOrderAsync(id, employeeID);
+                return Json(new ApiResult(1));
+            }
+            var model = await SalesDataService.GetOrderAsync(id);
+            if (model == null)
+                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            return PartialView(model);
         }
 
-        // GET: /Order/Cancel/{id}
-        public IActionResult Cancel(int id)
+        public async Task<IActionResult> Cancel(int id)
         {
-            ViewBag.Title = "Hủy đơn hàng";
-            ViewBag.OrderId = id;
-            return View(); // Views/Order/Cancel.cshtml
+            if (Request.Method == "POST")
+            {
+                await SalesDataService.CancelOrderAsync(id);
+                return Json(new ApiResult(1));
+            }
+            var model = await SalesDataService.GetOrderAsync(id);
+            if (model == null)
+                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            return PartialView(model);
         }
 
-        // GET: /Order/Delete/{id}
-        public IActionResult Delete(int id)
+        public async Task<IActionResult> Shipping(int id)
         {
-            ViewBag.Title = "Xóa đơn hàng";
-            ViewBag.OrderId = id;
-            return View(); // Views/Order/Delete.cshtml
+            if (Request.Method == "POST")
+            {
+                int shipperID = int.Parse(Request.Form["shipperID"].ToString() ?? "0");
+                if (shipperID <= 0)
+                    return Json(new ApiResult(0, "Vui lòng chọn người giao hàng"));
+                await SalesDataService.ShipOrderAsync(id, shipperID);
+                return Json(new ApiResult(1));
+            }
+            var model = await SalesDataService.GetOrderAsync(id);
+            if (model == null)
+                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            return PartialView(model);
         }
 
-        // ========= NOTE =========
-        // View DeleteItem.cshtml có sẵn trong thư mục nhưng route bạn đưa KHÔNG có.
-        // Nếu sau này bạn cần dùng DeleteItem, mở lại 2 dòng dưới đây:
+        public async Task<IActionResult> Finish(int id)
+        {
+            if (Request.Method == "POST")
+            {
+                await SalesDataService.CompleteOrderAsync(id);
+                return Json(new ApiResult(1));
+            }
+            var model = await SalesDataService.GetOrderAsync(id);
+            if (model == null)
+                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            return PartialView(model);
+        }
 
-        // GET: /Order/DeleteItem/{id}?productId={productId}
-        // public IActionResult DeleteItem(int id, int productId)
-        // {
-        //     ViewBag.Title = "Xóa mặt hàng trong đơn";
-        //     ViewBag.OrderId = id;
-        //     ViewBag.ProductId = productId;
-        //     return View(); // Views/Order/DeleteItem.cshtml
-        // }
+        public async Task<IActionResult> Delete(int id)
+        {
+            if (Request.Method == "POST")
+            {
+                await SalesDataService.DeleteOrderAsync(id);
+                return Json(new ApiResult(1));
+            }
+            var model = await SalesDataService.GetOrderAsync(id);
+            if (model == null)
+                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            return PartialView(model);
+        }
     }
 }

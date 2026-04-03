@@ -2,26 +2,33 @@
     Layout = null;
 }
 <div class="modal-header text-bg-danger">
-    <strong class="modal-title">
-        Xóa giỏ hàng
-    </strong>
+    <strong class="modal-title">Xóa giỏ hàng</strong>
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
-
 <div class="modal-body">
-    <div class="alert alert-danger d-flex align-items-center">
+    <div class="alert alert-danger">
         <i class="bi bi-info-circle me-2"></i>
-        Bạn có chắc chắn muốn xóa tất cả các mặt hàng trong giỏ hàng không?
+        Bạn có chắc chắn muốn xóa tất cả mặt hàng trong giỏ hàng không?
     </div>
 </div>
-
 <div class="modal-footer">
-    <button type="submit" class="btn btn-primary">
-        <i class="bi bi-check"></i> Chấp nhận
+    <button type="button" class="btn btn-danger" onclick="clearCart()">
+        <i class="bi bi-check"></i> Xác nhận
     </button>
-    <button type="button"
-            class="btn btn-secondary"
-            data-bs-dismiss="modal">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
         Đóng
     </button>
 </div>
+
+<script>
+    function clearCart() {
+        fetch("/Order/ClearCart", { method: "POST" })
+        .then(r => r.json())
+        .then(result => {
+            if (result.code > 0) {
+                bootstrap.Modal.getInstance(document.getElementById("dialogModal")).hide();
+                reloadCart();
+            }
+        });
+    }
+</script>

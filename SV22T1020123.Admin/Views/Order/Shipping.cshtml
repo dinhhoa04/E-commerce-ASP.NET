@@ -1,36 +1,47 @@
-﻿@{
+﻿@model OrderViewInfo
+@{
     Layout = null;
 }
 <div class="modal-header text-bg-info">
-    <strong class="modal-title">
-        Chọn người giao hàng
-    </strong>
+    <strong class="modal-title">Chọn người giao hàng</strong>
     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
 </div>
-
 <div class="modal-body">
-    <form method="post">
-        <div class="row">
-            <div class="col-12">
-                <label class="form-label">Người giao hàng</label>
-                <select class="form-select">
-                    <option value="0">-- Chọn người giao hàng ---</option>
-                    <option value="1">Giao hàng Tiết kiệm</option>
-                    <option value="2">Tín Thành</option>
-                    <option value="3">Viettel Express</option>
-                </select>
-            </div>
+    <div class="row">
+        <div class="col-12">
+            <label class="form-label">Người giao hàng</label>
+            <select id="shipperID" class="form-select"
+                    asp-items="await SelectListHelper.Shippers()">
+            </select>
         </div>
-    </form>
+    </div>
 </div>
-
 <div class="modal-footer">
-    <button type="submit" class="btn btn-primary">
+    <button type="button" class="btn btn-primary"
+            onclick="shipOrder('@Url.Action("Shipping", "Order", new { id = Model.OrderID })')">
         <i class="bi bi-bicycle"></i> Giao hàng
     </button>
-    <button type="button"
-            class="btn btn-secondary"
-            data-bs-dismiss="modal">
+    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
         Đóng
     </button>
 </div>
+<script>
+    function shipOrder(url) {
+        const shipperID = document.getElementById("shipperID").value;
+        fetch(url, {
+            method: "POST",
+            headers: { "Content-Type": "application/x-www-form-urlencoded" },
+            body: `shipperID=${shipperID}`
+        })
+        .then(r => r.json())
+        .then(result => {
+            if (result.code <= 0) {
+                alert(result.message);
+            } else {
+                bootstrap.Modal.getInstance(
+                    document.getElementById("dialogModal")).hide();
+                reloadPage();
+            }
+        });
+    }
+</script>

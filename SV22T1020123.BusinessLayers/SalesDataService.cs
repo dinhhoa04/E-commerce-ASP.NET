@@ -42,7 +42,7 @@ namespace SV22T1020123.BusinessLayers
         /// <summary>
         /// Tạo đơn hàng mới
         /// </summary>
-        public static async Task<int> AddOrderAsync(Order data)
+        public static async Task<int> AddOrderAsync(int customerID, Order data)
         {
             data.Status = OrderStatusEnum.New;
             data.OrderTime = DateTime.Now;
