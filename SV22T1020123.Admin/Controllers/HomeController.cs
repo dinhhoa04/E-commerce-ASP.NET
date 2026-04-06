@@ -1,12 +1,14 @@
 using System.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 using SV22T1020123.Admin.Models;
+using Microsoft.AspNetCore.Authorization;
 
 namespace SV22T1020123.Admin.Controllers
 {
     /// <summary>
     /// các ch?c n?ng c?a trang ch?
     /// </summary>
+    [Authorize]
     public class HomeController : Controller
     {
         private readonly ILogger<HomeController> _logger;

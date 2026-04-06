@@ -6,7 +6,7 @@
 <html lang="en">
 <head>
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>LiteCommerce</title>
+    <title>LiteCommerce - Đăng nhập</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
     <link rel="stylesheet" href="~/lib/overlay-scrollbars/overlayscrollbars.min.css">
     <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />
@@ -19,41 +19,38 @@
         <div class="login-logo">
             <a><b>TNP</b> Shop</a>
         </div>
-        <!-- /.login-logo -->
         <div class="card">
             <div class="card-body login-card-body">
-                <p class="login-box-msg">Đăng nhập</p>
-                <form action="#" method="post">
+                <p class="login-box-msg">Đăng nhập hệ thống quản trị</p>
+
+                @Html.ValidationMessage("Error", new { @class = "text-danger mb-3 d-block fw-bold text-center" })
+
+                <form action="~/Account/Login" method="post">
                     <div class="input-group mb-3">
-                        <input type="email" class="form-control" placeholder="Email" autofocus />
+                        <input type="email" class="form-control" name="username" value="@ViewBag.Username" placeholder="Email" required autofocus />
                         <div class="input-group-text"><span class="bi bi-envelope"></span></div>
                     </div>
+
                     <div class="input-group mb-3">
-                        <input type="password" class="form-control" placeholder="Password" />
+                        <input type="password" class="form-control" name="password" placeholder="Password" required />
                         <div class="input-group-text"><span class="bi bi-lock-fill"></span></div>
                     </div>
-                    <!--begin::Row-->
-                    <div class="row">                        
+
+                    <div class="row">
                         <div class="col-12">
                             <div class="d-grid gap-2">
                                 <button type="submit" class="btn btn-primary">Đăng nhập</button>
                             </div>
                         </div>
-                        <!-- /.col -->
                     </div>
-                    <!--end::Row-->
-                </form>                
+                </form>
             </div>
-            <!-- /.login-card-body -->
         </div>
     </div>
-    <!-- /.login-box -->
-
     <script src="~/lib/overlay-scrollbars/overlayscrollbars.browser.es6.min.js"></script>
     <script src="~/lib/popperjs/popper.min.js"></script>
     <script src="~/lib/bootstrap/bootstrap.bundle.min.js"></script>
     <script type="module" src="~/lib/adminlte/js/adminlte.js"></script>
 
 </body>
-
 </html>

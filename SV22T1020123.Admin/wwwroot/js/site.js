@@ -106,6 +106,21 @@ function paginationSearch(event, form, page) {
             .then(res => res.text())
             .then(html => {
                 modalContent.innerHTML = html;
+
+                // THÊM ĐOẠN NÀY: Khởi tạo lại AutoNumeric cho các thẻ input trong Modal
+                modalContent.querySelectorAll('.money-input').forEach(element => {
+                    new AutoNumeric(element, {
+                        digitGroupSeparator: '.',
+                        decimalCharacter: ',',
+                        decimalPlaces: 0,
+                        allowDecimalPadding: false,
+                        minimumValue: '0',
+                        modifyValueOnWheel: false,
+                        unformatOnSubmit: true,
+                        outputFormat: "string",
+                        emptyInputBehavior: "null"
+                    });
+                });
             })
             .catch(() => {
                 modalContent.innerHTML = `
@@ -117,17 +132,32 @@ function paginationSearch(event, form, page) {
 })();
 
 
-// Xử lý các thao tác đơn hàng qua modal (Accept, Reject, Cancel, Finish, Delete) bổ sung phần làm order 
+// Xử lý các thao tác đơn hàng qua modal (Accept, Reject, Cancel, Finish, Delete)
 function processOrder(url) {
     fetch(url, { method: "POST" })
-        .then(r => r.json())
+        .then(r => {
+            // Nếu Server trả về lỗi 500 thay vì JSON, bắt lỗi tại đây
+            if (!r.ok) throw new Error("Lỗi kết nối hoặc lỗi máy chủ (500)");
+            return r.json();
+        })
         .then(result => {
             if (result.code <= 0) {
+                // Hiển thị thông báo lỗi rõ ràng từ try-catch ở Controller
                 alert(result.message);
             } else {
-                bootstrap.Modal.getInstance(
-                    document.getElementById("dialogModal")).hide();
-                reloadPage();
+                // Đóng Modal và làm mới trang nếu thành công
+                let modalInstance = bootstrap.Modal.getInstance(document.getElementById("dialogModal"));
+                if (modalInstance) modalInstance.hide();
+
+                if (typeof reloadPage === "function") {
+                    reloadPage();
+                } else {
+                    window.location.reload();
+                }
             }
+        })
+        .catch(err => {
+            console.error(err);
+            alert("Đã xảy ra lỗi hệ thống: " + err.message);
         });
 }

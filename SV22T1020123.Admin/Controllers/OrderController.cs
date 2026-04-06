@@ -133,35 +133,50 @@ namespace SV22T1020123.Web.Controllers
         }
 
         [HttpPost]
-        public async Task<IActionResult> CreateOrder(int customerID = 0,
-    string province = "", string address = "")
+        public async Task<IActionResult> CreateOrder(int customerID = 0, string province = "", string address = "")
         {
             var cart = ShoppingCartService.GetShoppingCart();
             if (cart.Count == 0)
                 return Json(new ApiResult(0, "Giỏ hàng trống, không thể lập đơn hàng"));
 
+            // Bắt lỗi không cho phép bỏ trống Khách hàng, Tỉnh/thành và Địa chỉ
+            if (customerID <= 0)
+                return Json(new ApiResult(0, "Vui lòng chọn khách hàng."));
+            if (string.IsNullOrWhiteSpace(province))
+                return Json(new ApiResult(0, "Vui lòng chọn Tỉnh/thành."));
+            if (string.IsNullOrWhiteSpace(address))
+                return Json(new ApiResult(0, "Vui lòng nhập địa chỉ giao hàng."));
+
             var order = new Order()
             {
-                CustomerID = customerID == 0 ? null : customerID,
+                CustomerID = customerID,
                 DeliveryProvince = province,
                 DeliveryAddress = address,
             };
 
-            int orderID = await SalesDataService.AddOrderAsync(customerID, order);
+            // Lưu ý: Tham số đầu tiên của AddOrderAsync là mã Nhân viên (EmployeeID). 
+            // Mình sử dụng lại hàm GetCurrentEmployeeID() của bạn.
+            int employeeID = GetCurrentEmployeeID();
+            int orderID = await SalesDataService.AddOrderAsync(employeeID, order);
 
-            foreach (var item in cart)
+            if (orderID > 0)
             {
-                await SalesDataService.AddDetailAsync(new OrderDetail()
+                foreach (var item in cart)
                 {
-                    OrderID = orderID,
-                    ProductID = item.ProductID,
-                    Quantity = item.Quantity,
-                    SalePrice = item.SalePrice,
-                });
+                    await SalesDataService.AddDetailAsync(new OrderDetail()
+                    {
+                        OrderID = orderID,
+                        ProductID = item.ProductID,
+                        Quantity = item.Quantity,
+                        SalePrice = item.SalePrice,
+                    });
+                }
+
+                ShoppingCartService.ClearCart();
+                return Json(new ApiResult(orderID));
             }
 
-            ShoppingCartService.ClearCart();
-            return Json(new ApiResult(orderID));
+            return Json(new ApiResult(0, "Có lỗi xảy ra khi lưu vào Cơ sở dữ liệu."));
         }
         // ========== CHI TIẾT ĐƠN HÀNG ==========
 
@@ -176,18 +191,28 @@ namespace SV22T1020123.Web.Controllers
 
         // ========== XỬ LÝ TRẠNG THÁI ĐƠN HÀNG ==========
 
+        // Giả lập mã nhân viên đang đăng nhập. (ĐẢM BẢO MÃ NÀY CÓ TRONG BẢNG EMPLOYEES)
+        private int GetCurrentEmployeeID()
+        {
+            return 1; // Đổi số 1 thành mã nhân viên có thật trong DB của bạn nếu cần
+        }
+
         public async Task<IActionResult> Accept(int id)
         {
             if (Request.Method == "POST")
             {
-                // TODO: lấy employeeID từ session đăng nhập
-                int employeeID = 1;
-                await SalesDataService.AcceptOrderAsync(id, employeeID);
-                return Json(new ApiResult(1));
+                try
+                {
+                    await SalesDataService.AcceptOrderAsync(id, GetCurrentEmployeeID());
+                    return Json(new ApiResult(1));
+                }
+                catch (Exception ex)
+                {
+                    return Json(new ApiResult(0, "Lỗi Server: " + ex.Message));
+                }
             }
             var model = await SalesDataService.GetOrderAsync(id);
-            if (model == null)
-                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            if (model == null) return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
             return PartialView(model);
         }
 
@@ -195,13 +220,18 @@ namespace SV22T1020123.Web.Controllers
         {
             if (Request.Method == "POST")
             {
-                int employeeID = 1;
-                await SalesDataService.RejectOrderAsync(id, employeeID);
-                return Json(new ApiResult(1));
+                try
+                {
+                    await SalesDataService.RejectOrderAsync(id, GetCurrentEmployeeID());
+                    return Json(new ApiResult(1));
+                }
+                catch (Exception ex)
+                {
+                    return Json(new ApiResult(0, "Lỗi Server: " + ex.Message));
+                }
             }
             var model = await SalesDataService.GetOrderAsync(id);
-            if (model == null)
-                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            if (model == null) return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
             return PartialView(model);
         }
 
@@ -209,12 +239,18 @@ namespace SV22T1020123.Web.Controllers
         {
             if (Request.Method == "POST")
             {
-                await SalesDataService.CancelOrderAsync(id);
-                return Json(new ApiResult(1));
+                try
+                {
+                    await SalesDataService.CancelOrderAsync(id);
+                    return Json(new ApiResult(1));
+                }
+                catch (Exception ex)
+                {
+                    return Json(new ApiResult(0, "Lỗi Server: " + ex.Message));
+                }
             }
             var model = await SalesDataService.GetOrderAsync(id);
-            if (model == null)
-                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            if (model == null) return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
             return PartialView(model);
         }
 
@@ -222,15 +258,21 @@ namespace SV22T1020123.Web.Controllers
         {
             if (Request.Method == "POST")
             {
-                int shipperID = int.Parse(Request.Form["shipperID"].ToString() ?? "0");
-                if (shipperID <= 0)
-                    return Json(new ApiResult(0, "Vui lòng chọn người giao hàng"));
-                await SalesDataService.ShipOrderAsync(id, shipperID);
-                return Json(new ApiResult(1));
+                try
+                {
+                    int shipperID = int.Parse(Request.Form["shipperID"].ToString() ?? "0");
+                    if (shipperID <= 0) return Json(new ApiResult(0, "Vui lòng chọn người giao hàng"));
+
+                    await SalesDataService.ShipOrderAsync(id, shipperID);
+                    return Json(new ApiResult(1));
+                }
+                catch (Exception ex)
+                {
+                    return Json(new ApiResult(0, "Lỗi Server: " + ex.Message));
+                }
             }
             var model = await SalesDataService.GetOrderAsync(id);
-            if (model == null)
-                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            if (model == null) return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
             return PartialView(model);
         }
 
@@ -238,12 +280,18 @@ namespace SV22T1020123.Web.Controllers
         {
             if (Request.Method == "POST")
             {
-                await SalesDataService.CompleteOrderAsync(id);
-                return Json(new ApiResult(1));
+                try
+                {
+                    await SalesDataService.CompleteOrderAsync(id);
+                    return Json(new ApiResult(1));
+                }
+                catch (Exception ex)
+                {
+                    return Json(new ApiResult(0, "Lỗi Server: " + ex.Message));
+                }
             }
             var model = await SalesDataService.GetOrderAsync(id);
-            if (model == null)
-                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            if (model == null) return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
             return PartialView(model);
         }
 
@@ -251,13 +299,21 @@ namespace SV22T1020123.Web.Controllers
         {
             if (Request.Method == "POST")
             {
-                await SalesDataService.DeleteOrderAsync(id);
-                return Json(new ApiResult(1));
+                try
+                {
+                    await SalesDataService.DeleteOrderAsync(id);
+                    return Json(new ApiResult(1));
+                }
+                catch (Exception ex)
+                {
+                    return Json(new ApiResult(0, "Lỗi Server: " + ex.Message));
+                }
             }
             var model = await SalesDataService.GetOrderAsync(id);
-            if (model == null)
-                return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
+            if (model == null) return Json(new ApiResult(0, "Không tìm thấy đơn hàng"));
             return PartialView(model);
         }
+
+
     }
 }

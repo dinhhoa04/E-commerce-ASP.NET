@@ -21,18 +21,3 @@
         Đóng
     </button>
 </div>
-
-<script>
-    function deleteCartItem(productId) {
-        fetch(`/Order/DeleteCartItem?productId=${productId}`, {
-            method: "POST"
-        })
-        .then(r => r.json())
-        .then(result => {
-            if (result.code > 0) {
-                bootstrap.Modal.getInstance(document.getElementById("dialogModal")).hide();
-                reloadCart();
-            }
-        });
-    }
-</script>

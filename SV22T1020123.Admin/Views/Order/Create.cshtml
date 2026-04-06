@@ -1,4 +1,5 @@
 ﻿@model ProductSearchInput
+@using SV22T1020123.BusinessLayers
 @{
     ViewBag.Title = "Lập đơn hàng";
 }
@@ -53,8 +54,20 @@
                 <div class="row mb-3">
                     <label class="col-md-2 col-form-label">Khách hàng</label>
                     <div class="col-md-10">
-                        <select id="customerID" class="form-select"
-                                asp-items="@(new Microsoft.AspNetCore.Mvc.Rendering.SelectList(new[] { new { Value = "0", Text = "-- Khách lẻ (không có tài khoản) --" } }, "Value", "Text"))">
+                        @{
+                            var searchInput = new SV22T1020123.Models.Common.PaginationSearchInput { Page = 1, PageSize = 1000, SearchValue = "" };
+                            // Chỉ cần gọi trực tiếp PartnerDataService, không cần đường dẫn dài nữa
+                            var customers = await PartnerDataService.ListCustomersAsync(searchInput);
+                        }
+                        <select id="customerID" class="form-select">
+                            <option value="0">-- Chọn khách hàng --</option>
+                            @if (customers != null)
+                            {
+                                foreach (var c in customers.DataItems)
+                                {
+                                            <option value="@c.CustomerID">@c.CustomerName (@c.Phone)</option>
+                                }
+                            }
                         </select>
                     </div>
                 </div>
@@ -109,6 +122,9 @@
                 });
         }
 
+        
+    
+        // Hàm load lại giỏ hàng của bạn (giữ nguyên)
         function reloadCart() {
             fetch("/Order/ShowCart")
                 .then(r => r.text())
@@ -116,6 +132,64 @@
                     document.getElementById("shoppingCart").innerHTML = html;
                 });
         }
+
+        // --- CÁC HÀM XỬ LÝ MODAL (MỚI THÊM) ---
+
+        // 1. Hàm cập nhật mặt hàng trong giỏ
+        function updateCartItem(productId) {
+            // Lấy giá trị chuỗi trong ô nhập giá (VD: "323.000")
+            let priceString = document.getElementById("editPrice").value;
+            // Xóa tất cả dấu chấm (phân cách hàng nghìn) và chuyển thành số
+            const price = parseFloat(priceString.replace(/\./g, '').replace(/,/g, ''));
+
+            const quantity = parseInt(document.getElementById("editQty").value);
+
+            fetch("/Order/UpdateCartItem", {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `productId=${productId}&quantity=${quantity}&salePrice=${price}`
+            })
+                .then(r => r.json())
+                .then(result => {
+                    if (result.code <= 0) {
+                        alert(result.message);
+                    } else {
+                        bootstrap.Modal.getInstance(document.getElementById("dialogModal")).hide();
+                        reloadCart(); // Gọi lại giỏ hàng
+                    }
+                })
+                .catch(error => {
+                    console.error("Lỗi cập nhật giỏ hàng:", error);
+                    alert("Đã xảy ra lỗi khi cập nhật!");
+                });
+        }
+
+        // 2. Hàm xóa 1 mặt hàng khỏi giỏ
+        function deleteCartItem(productId) {
+            fetch(`/Order/DeleteCartItem?productId=${productId}`, {
+                method: "POST"
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (result.code > 0) {
+                    bootstrap.Modal.getInstance(document.getElementById("dialogModal")).hide();
+                    reloadCart(); // Gọi lại giỏ hàng
+                }
+            });
+        }
+
+        // 3. Hàm xóa toàn bộ giỏ hàng
+        function clearCart() {
+            fetch("/Order/ClearCart", { method: "POST" })
+            .then(r => r.json())
+            .then(result => {
+                if (result.code > 0) {
+                    bootstrap.Modal.getInstance(document.getElementById("dialogModal")).hide();
+                    reloadCart(); // Gọi lại giỏ hàng
+                }
+            });
+        }
+ 
 
 
 

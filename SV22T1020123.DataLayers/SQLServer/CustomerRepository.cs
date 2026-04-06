@@ -222,5 +222,26 @@ namespace SV22T1020123.DataLayers.SQLServer
                 return count == 0;
             }
         }
+
+        public async Task<Customer?> AuthorizeAsync(string email, string password)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            // Kiểm tra Email, Password và tài khoản không bị khóa (IsLocked = 0)
+            string sql = @"SELECT * FROM Customers 
+                           WHERE Email = @Email AND Password = @Password AND IsLocked = 0";
+            return await connection.QueryFirstOrDefaultAsync<Customer>(sql, new { Email = email, Password = password });
+        }
+
+        public async Task<bool> ChangePasswordAsync(int id, string password)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            string sql = @"UPDATE Customers 
+                           SET Password = @Password 
+                           WHERE CustomerID = @id";
+            var result = await connection.ExecuteAsync(sql, new { id = id, Password = password });
+            return result > 0;
+        }
+
+
     }
 }

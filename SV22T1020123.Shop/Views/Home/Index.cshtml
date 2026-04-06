@@ -1,8 +1,108 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@using SV22T1020123.Models.Catalog
+@using SV22T1020123.Models.Common
+@model PagedResult<Product>
+@{
+    ViewData["Title"] = "Trang chủ";
+    var searchInput = ViewBag.SearchInput as ProductSearchInput;
+    var categories = ViewBag.Categories as PagedResult<Category>;
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="row">
+    <div class="col-md-3 mb-4">
+        <form id="formSearch" action="~/" method="get">
+            <div class="card shadow-sm mb-3">
+                <div class="card-header bg-white fw-bold">
+                    <i class="bi bi-search"></i> Tìm kiếm
+                </div>
+                <div class="card-body">
+                    <div class="mb-3">
+                        <input type="text" class="form-control" name="searchValue" value="@searchInput?.SearchValue" placeholder="Nhập tên sản phẩm...">
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Loại hàng</label>
+                        <select class="form-select" name="categoryId">
+                            <option value="0">-- Tất cả loại hàng --</option>
+                            @if (categories != null)
+                            {
+                                foreach (var cat in categories.DataItems)
+                                {
+                                    if (searchInput?.CategoryID == cat.CategoryID)
+                                    {
+                                        <option value="@cat.CategoryID" selected>@cat.CategoryName</option>
+                                    }
+                                    else
+                                    {
+                                        <option value="@cat.CategoryID">@cat.CategoryName</option>
+                                    }
+                                }
+                            }
+                        </select>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Khoảng giá</label>
+                        <div class="d-flex align-items-center">
+                            <input type="number" class="form-control form-control-sm" name="minPrice" value="@(searchInput?.MinPrice == 0 ? "" : searchInput?.MinPrice)" placeholder="Từ">
+                            <span class="mx-2">-</span>
+                            <input type="number" class="form-control form-control-sm" name="maxPrice" value="@(searchInput?.MaxPrice == 0 ? "" : searchInput?.MaxPrice)" placeholder="Đến">
+                        </div>
+                    </div>
+                    <button type="submit" class="btn btn-primary w-100"><i class="bi bi-funnel"></i> Lọc sản phẩm</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+    <div class="col-md-9">
+        <div class="row row-cols-1 row-cols-md-3 g-4 mb-4">
+            @foreach (var item in Model.DataItems)
+            {
+                <div class="col">
+                    <div class="card h-100 shadow-sm product-card">
+                        <a href="~/Home/Detail/@item.ProductID">
+                            <img src="http://localhost:5284/images/products/@(string.IsNullOrEmpty(item.Photo) ? "nophoto.png" : item.Photo)"
+                                 class="card-img-top p-2" alt="@item.ProductName" style="height: 200px; object-fit: contain;">
+                        </a>
+                        <div class="card-body d-flex flex-column">
+                            <h6 class="card-title text-truncate" title="@item.ProductName">
+                                <a href="~/Home/Detail/@item.ProductID" class="text-decoration-none text-dark">@item.ProductName</a>
+                            </h6>
+                            <p class="card-text text-danger fw-bold mt-auto mb-2">@item.Price.ToString("N0") đ</p>
+                            <button class="btn btn-outline-primary w-100 mt-auto btn-add-cart" data-id="@item.ProductID">
+                                <i class="bi bi-cart-plus"></i> Thêm vào giỏ
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            }
+        </div>
+
+        @if (Model.PageCount > 1)
+        {
+            <nav>
+                <ul class="pagination justify-content-center">
+                    @foreach (var p in Model.GetDisplayPages())
+                    {
+                        if (p.IsCurrent)
+                        {
+                            <li class="page-item active"><span class="page-link">@p.Page</span></li>
+                        }
+                        else if (p.IsEllipsis)
+                        {
+                            <li class="page-item disabled"><span class="page-link">...</span></li>
+                        }
+                        else
+                        {
+                            <li class="page-item">
+                                <a class="page-link" href="~/?page=@p.Page&searchValue=@searchInput?.SearchValue&categoryId=@searchInput?.CategoryID&minPrice=@searchInput?.MinPrice&maxPrice=@searchInput?.MaxPrice">@p.Page</a>
+                            </li>
+                        }
+                    }
+                </ul>
+            </nav>
+        }
+    </div>
 </div>
+
+<style>
+    .product-card:hover { transform: translateY(-5px); transition: 0.3s; border-color: #0d6efd; }
+</style>

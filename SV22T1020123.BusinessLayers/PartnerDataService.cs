@@ -200,6 +200,17 @@ public static class PartnerDataService
         return await customerDB.ValidateEmailAsync(email, customerID);
     }
 
+
+    public static async Task<Customer?> AuthorizeCustomerAsync(string email, string password)
+    {
+        return await customerDB.AuthorizeAsync(email, password);
+    }
+
+    public static async Task<bool> ChangeCustomerPasswordAsync(int customerId, string password)
+    {
+        return await customerDB.ChangePasswordAsync(customerId, password);
+    }
+
     #endregion
 
     #region Shipper

@@ -25,23 +25,3 @@
         Đóng
     </button>
 </div>
-<script>
-    function shipOrder(url) {
-        const shipperID = document.getElementById("shipperID").value;
-        fetch(url, {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `shipperID=${shipperID}`
-        })
-        .then(r => r.json())
-        .then(result => {
-            if (result.code <= 0) {
-                alert(result.message);
-            } else {
-                bootstrap.Modal.getInstance(
-                    document.getElementById("dialogModal")).hide();
-                reloadPage();
-            }
-        });
-    }
-</script>

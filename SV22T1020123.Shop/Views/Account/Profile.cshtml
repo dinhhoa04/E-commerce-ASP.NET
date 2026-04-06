@@ -1,0 +1,70 @@
+﻿@model SV22T1020123.Models.Partner.Customer
+@{
+    ViewData["Title"] = "Thông tin cá nhân";
+}
+
+<div class="row mt-4">
+    <div class="col-md-3 mb-4">
+        <div class="list-group shadow-sm">
+            <a href="~/Account/Profile" class="list-group-item list-group-item-action active fw-bold">
+                <i class="bi bi-person-vcard me-2"></i> Hồ sơ cá nhân
+            </a>
+            <a href="~/Order/History" class="list-group-item list-group-item-action">
+                <i class="bi bi-receipt me-2"></i> Lịch sử đơn hàng
+            </a>
+            <a href="~/Account/ChangePassword" class="list-group-item list-group-item-action">
+                <i class="bi bi-shield-lock me-2"></i> Đổi mật khẩu
+            </a>
+            <a href="~/Account/Logout" class="list-group-item list-group-item-action text-danger">
+                <i class="bi bi-box-arrow-right me-2"></i> Đăng xuất
+            </a>
+        </div>
+    </div>
+
+    <div class="col-md-9">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-bold fs-5 py-3">
+                Thông tin cá nhân
+            </div>
+            <div class="card-body p-4">
+                @if (TempData["SuccessMessage"] != null)
+                {
+                    <div class="alert alert-success"><i class="bi bi-check-circle me-2"></i>@TempData["SuccessMessage"]</div>
+                }
+                @Html.ValidationMessage("Error", new { @class = "text-danger mb-3 d-block" })
+
+                <form action="~/Account/Profile" method="post">
+                    <input type="hidden" asp-for="Email" /> <div class="mb-3">
+                        <label class="form-label fw-semibold text-muted">Email đăng nhập</label>
+                        <input type="text" class="form-control bg-light" value="@Model.Email" readonly />
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Họ và tên</label>
+                            <input type="text" asp-for="CustomerName" class="form-control" required />
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label fw-semibold">Số điện thoại</label>
+                            <input type="tel" asp-for="Phone" class="form-control" />
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tỉnh/Thành phố</label>
+                        <select class="form-select" asp-for="Province" asp-items="ViewBag.Provinces">
+                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Địa chỉ chi tiết</label>
+                        <textarea asp-for="Address" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary px-4">Lưu thay đổi</button>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

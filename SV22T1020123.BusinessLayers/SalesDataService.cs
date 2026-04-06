@@ -213,6 +213,19 @@ namespace SV22T1020123.BusinessLayers
             return await orderDB.DeleteDetailAsync(orderID, productID);
         }
 
+
+        // ===== HÀM MỚI THÊM: Lịch sử mua hàng =====
+        public static async Task<IList<OrderViewInfo>> ListOrdersByCustomerIdAsync(int customerId)
+        {
+            return await orderDB.ListByCustomerIdAsync(customerId);
+        }
+        // ==========================================
+
+        public static async Task<bool> SaveOrderDetailAsync(int orderID, int productID, int quantity, decimal salePrice)
+        {
+            return await orderDB.SaveDetailAsync(orderID, productID, quantity, salePrice);
+        }
+
         #endregion
     }
 }

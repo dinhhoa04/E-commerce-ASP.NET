@@ -217,5 +217,48 @@ AND ProductID = @productID";
 
             return await connection.ExecuteAsync(sql, new { orderID, productID }) > 0;
         }
+
+
+        // ===== HÀM MỚI THÊM: Lấy danh sách đơn hàng của 1 khách hàng =====
+        public async Task<IList<OrderViewInfo>> ListByCustomerIdAsync(int customerId)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            string sql = @"SELECT o.*,
+                                  c.CustomerName,
+                                  c.ContactName as CustomerContactName,
+                                  c.Address as CustomerAddress,
+                                  c.Phone as CustomerPhone,
+                                  c.Email as CustomerEmail,
+                                  e.FullName as EmployeeName,
+                                  s.ShipperName,
+                                  s.Phone as ShipperPhone
+                           FROM Orders o
+                           LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
+                           LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
+                           LEFT JOIN Shippers s ON o.ShipperID = s.ShipperID
+                           WHERE o.CustomerID = @CustomerID
+                           ORDER BY o.OrderTime DESC";
+            var result = await connection.QueryAsync<OrderViewInfo>(sql, new { CustomerID = customerId });
+            return result.ToList();
+        }
+        // =================================================================
+
+
+        public async Task<bool> SaveDetailAsync(int orderID, int productID, int quantity, decimal salePrice)
+        {
+            using var connection = new SqlConnection(_connectionString);
+            string sql = @"
+                IF EXISTS(SELECT * FROM OrderDetails WHERE OrderID = @OrderID AND ProductID = @ProductID)
+                    UPDATE OrderDetails
+                    SET Quantity = Quantity + @Quantity, SalePrice = @SalePrice
+                    WHERE OrderID = @OrderID AND ProductID = @ProductID
+                ELSE
+                    INSERT INTO OrderDetails(OrderID, ProductID, Quantity, SalePrice)
+                    VALUES(@OrderID, @ProductID, @Quantity, @SalePrice)";
+            var result = await connection.ExecuteAsync(sql, new { OrderID = orderID, ProductID = productID, Quantity = quantity, SalePrice = salePrice });
+            return result > 0;
+        }
+
+
     }
 }

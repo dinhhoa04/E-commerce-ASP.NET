@@ -1,0 +1,81 @@
+﻿@using SV22T1020123.Models.Catalog
+@model Product
+@{
+    ViewData["Title"] = Model.ProductName;
+    var photos = ViewBag.Photos as List<ProductPhoto>;
+    var attributes = ViewBag.Attributes as List<ProductAttribute>;
+}
+
+<nav aria-label="breadcrumb" class="mb-4">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="~/">Trang chủ</a></li>
+        <li class="breadcrumb-item active" aria-current="page">@Model.ProductName</li>
+    </ol>
+</nav>
+
+<div class="row mb-5">
+    <div class="col-md-5">
+        <div class="card shadow-sm mb-3">
+            <img id="mainImage" src="http://localhost:5284/images/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)" class="img-fluid rounded p-2" alt="@Model.ProductName" style="max-height: 400px; object-fit: contain; width: 100%;">
+        </div>
+        @if (photos != null && photos.Any(p => !p.IsHidden))
+        {
+            <div class="d-flex gap-2 overflow-auto pb-2">
+                <img src="http://localhost:5284/images/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)" class="img-thumbnail cursor-pointer" style="width: 80px; height: 80px; object-fit: cover;" onclick="changeMainImage(this.src)">
+
+                @foreach (var p in photos.Where(x => !x.IsHidden).OrderBy(x => x.DisplayOrder))
+                {
+                    <img src="http://localhost:5284/images/products/@p.Photo" class="img-thumbnail cursor-pointer" alt="@p.Description" style="width: 80px; height: 80px; object-fit: cover;" onclick="changeMainImage(this.src)">
+                }
+            </div>
+        }
+    </div>
+
+    <div class="col-md-7">
+        <h2 class="fw-bold mb-3">@Model.ProductName</h2>
+        <h3 class="text-danger fw-bold mb-4">@Model.Price.ToString("N0") đ <span class="fs-6 text-muted fw-normal">/ @Model.Unit</span></h3>
+
+        <div class="mb-4">
+            <p>@Model.ProductDescription</p>
+        </div>
+
+        <hr />
+
+        <div class="d-flex align-items-center gap-3 mt-4 mb-4">
+            <div style="width: 120px;">
+                <input type="number" id="quantity" class="form-control text-center" value="1" min="1">
+            </div>
+            <button class="btn btn-primary btn-lg px-4">
+                <i class="bi bi-cart-plus me-2"></i>Thêm vào giỏ hàng
+            </button>
+        </div>
+
+        @if (attributes != null && attributes.Any())
+        {
+            <h5 class="fw-bold mt-5 mb-3">Thông số kỹ thuật</h5>
+            <table class="table table-striped table-bordered">
+                <tbody>
+                    @foreach (var attr in attributes.OrderBy(a => a.DisplayOrder))
+                    {
+                        <tr>
+                            <th style="width: 30%">@attr.AttributeName</th>
+                            <td>@attr.AttributeValue</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        function changeMainImage(src) {
+            document.getElementById('mainImage').src = src;
+        }
+    </script>
+    <style>
+        .cursor-pointer { cursor: pointer; }
+        .cursor-pointer:hover { border-color: #0d6efd; }
+    </style>
+}

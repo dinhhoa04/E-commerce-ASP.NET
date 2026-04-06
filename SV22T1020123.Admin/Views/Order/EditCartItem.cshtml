@@ -48,25 +48,3 @@
         Đóng
     </button>
 </div>
-
-<script>
-    function updateCartItem(productId) {
-        const price = AutoNumeric.getNumber(document.getElementById("editPrice"));
-        const quantity = parseInt(document.getElementById("editQty").value);
-
-        fetch("/Order/UpdateCartItem", {
-            method: "POST",
-            headers: { "Content-Type": "application/x-www-form-urlencoded" },
-            body: `productId=${productId}&quantity=${quantity}&salePrice=${price}`
-        })
-        .then(r => r.json())
-        .then(result => {
-            if (result.code <= 0) {
-                alert(result.message);
-            } else {
-                bootstrap.Modal.getInstance(document.getElementById("dialogModal")).hide();
-                reloadCart();
-            }
-        });
-    }
-</script>

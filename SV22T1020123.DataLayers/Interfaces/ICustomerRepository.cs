@@ -17,5 +17,9 @@ namespace SV22T1020123.DataLayers.Interfaces
         /// </param>
         /// <returns></returns>
         Task<bool> ValidateEmailAsync(string email, int id = 0);
+
+        // đăng ký đăng nhập 
+        Task<Customer?> AuthorizeAsync(string email, string password);
+        Task<bool> ChangePasswordAsync(int id, string password);
     }
 }

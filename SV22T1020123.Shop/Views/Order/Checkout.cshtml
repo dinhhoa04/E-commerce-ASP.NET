@@ -1,0 +1,69 @@
+﻿@using SV22T1020123.Models.Sales
+@model List<OrderDetailViewInfo>
+@{
+    ViewData["Title"] = "Thanh toán";
+    decimal totalAmount = Model.Sum(x => x.TotalPrice);
+}
+
+<h3 class="mb-4 fw-bold">Thông tin đặt hàng</h3>
+
+<div class="row">
+    <div class="col-md-7">
+        <div class="card shadow-sm border-0 mb-4">
+            <div class="card-header bg-white fw-bold fs-5">
+                <i class="bi bi-geo-alt text-primary me-2"></i>Địa chỉ nhận hàng
+            </div>
+            <div class="card-body">
+                
+
+                <form action="~/Order/InitOrder" method="post">
+                    <div class="mb-3">
+                        <label class="form-label fw-semibold">Tỉnh/Thành phố <span class="text-danger">*</span></label>
+                        <select class="form-select" name="deliveryProvince" required asp-items="ViewBag.Provinces">
+                            <option value="">-- Chọn Tỉnh/Thành phố --</option>
+                        </select>
+                    </div>
+                    <div class="mb-4">
+                        <label class="form-label fw-semibold">Địa chỉ chi tiết <span class="text-danger">*</span></label>
+                        <textarea class="form-control" name="deliveryAddress" rows="3" placeholder="Số nhà, Tên đường, Phường/Xã..." required></textarea>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary btn-lg w-100">
+                        <i class="bi bi-check-circle me-2"></i> Xác nhận đặt hàng
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-5">
+        <div class="card shadow-sm border-0">
+            <div class="card-header bg-white fw-bold fs-5">
+                <i class="bi bi-bag-check text-success me-2"></i>Đơn hàng của bạn (@Model.Sum(x => x.Quantity) sản phẩm)
+            </div>
+            <div class="card-body p-0">
+                <ul class="list-group list-group-flush">
+                    @foreach (var item in Model)
+                    {
+                        <li class="list-group-item d-flex justify-content-between align-items-center py-3">
+                            <div class="d-flex align-items-center">
+                                <img src="http://localhost:5284/images/products/@(string.IsNullOrEmpty(item.Photo) ? "nophoto.png" : item.Photo)" class="img-thumbnail me-3" style="width: 50px; height: 50px; object-fit: cover;" />
+                                <div>
+                                    <h6 class="mb-0 text-truncate" style="max-width: 200px;">@item.ProductName</h6>
+                                    <small class="text-muted">SL: @item.Quantity</small>
+                                </div>
+                            </div>
+                            <span class="fw-semibold">@item.TotalPrice.ToString("N0") đ</span>
+                        </li>
+                    }
+                </ul>
+            </div>
+            <div class="card-footer bg-light">
+                <div class="d-flex justify-content-between align-items-center">
+                    <span class="fs-5 fw-bold">Tổng cộng:</span>
+                    <span class="fs-4 text-danger fw-bold">@totalAmount.ToString("N0") đ</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

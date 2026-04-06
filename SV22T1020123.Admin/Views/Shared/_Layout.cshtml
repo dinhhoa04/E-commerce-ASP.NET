@@ -4,8 +4,8 @@
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
     <title>LiteCommerce</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
-    <link rel="stylesheet" href="~/lib/flatpickr/flatpickr.min.css">    
-    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />    
+    <link rel="stylesheet" href="~/lib/flatpickr/flatpickr.min.css">
+    <link rel="stylesheet" href="~/lib/bootstrap/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="~/lib/adminlte/css/adminlte.css" />
     <link rel="stylesheet" href="~/css/site.css" />
     @await RenderSectionAsync("Styles", required: false)
@@ -13,7 +13,7 @@
 <body class="layout-fixed fixed-header fixed-footer sidebar-expand-lg sidebar-open bg-body-tertiary">
     <div class="app-wrapper">
         @await Html.PartialAsync("_Header")
-        @await Html.PartialAsync("_Sidebar")        
+        @await Html.PartialAsync("_Sidebar")
         <main class="app-main">
             <div class="app-content-header">
                 <div class="container-fluid">
@@ -35,48 +35,115 @@
                 </div>
             </div>
         </main>
-        @await Html.PartialAsync("_Footer")        
+        @await Html.PartialAsync("_Footer")
     </div>
     <button id="scrollToTop" onclick="window.scrollTo(0,0)">
         <i class="bi bi-arrow-up-circle"></i>
     </button>
     <div class="modal fade" id="dialogModal" tabindex="-1" aria-hidden="true" style="display:none;">
         <div class="modal-dialog modal-lg modal-dialog-centered">
-            <div class="modal-content">                
+            <div class="modal-content">
             </div>
         </div>
     </div>
     <script src="~/lib/flatpickr/flatpickr.min.js"></script>
-    <script src="~/lib/flatpickr/l10n/vn.js"></script>    
-    <script src="~/lib/autonumeric/autonumeric.js"></script>    
+    <script src="~/lib/flatpickr/l10n/vn.js"></script>
+    <script src="~/lib/autonumeric/autonumeric.js"></script>
     <script src="~/lib/bootstrap/bootstrap.bundle.min.js"></script>
     <script type="module" src="~/lib/adminlte/js/adminlte.js"></script>
     <script src="~/js/site.js"></script>
+
     <script>
-        document.addEventListener("DOMContentLoaded", function () {            
+        document.addEventListener("DOMContentLoaded", function () {
+            // 1. Cấu hình Flatpickr
             flatpickr(".date-picker", {
                 dateFormat: "d/m/Y",
                 locale: "vn",
                 allowInput: false
             });
-            new AutoNumeric(element, {
-    digitGroupSeparator: '.',
-    decimalCharacter: ',',
-    decimalPlaces: 0,               // Không cho phép có số thập phân
-    allowDecimalPadding: false,      // Không tự động thêm .000
-    minimumValue: '0',
-    modifyValueOnWheel: false,
-    unformatOnSubmit: true,
-    outputFormat: "string",
-    emptyInputBehavior: "null"
-});
-            document.querySelectorAll(".open-modal").forEach(element => {                
-                 element.addEventListener("click", function (e) {                    
-                    openModal(e, this);
+
+            // 2. Cấu hình AutoNumeric (Đã sửa lỗi biến element chưa được định nghĩa)
+            document.querySelectorAll('.money-input').forEach(element => {
+                new AutoNumeric(element, {
+                    digitGroupSeparator: '.',
+                    decimalCharacter: ',',
+                    decimalPlaces: 0,               // Không cho phép có số thập phân
+                    allowDecimalPadding: false,      // Không tự động thêm .000
+                    minimumValue: '0',
+                    modifyValueOnWheel: false,
+                    unformatOnSubmit: true,
+                    outputFormat: "string",
+                    emptyInputBehavior: "null"
                 });
             });
+
+            // 3. Xử lý mở Modal bằng Event Delegation (Đã sửa lỗi mất Modal khi dùng AJAX)
+            document.body.addEventListener("click", function (e) {
+                let target = e.target.closest(".open-modal");
+                if (target) {
+                    e.preventDefault(); // Chặn hành vi click thẻ <a> mặc định
+                    openModal(e, target);
+                }
+            });
         });
+
+        // ===== THÊM ĐOẠN NÀY ĐỂ XỬ LÝ CÁC NÚT BẤM (DUYỆT/TỪ CHỐI/XÓA) ĐƠN HÀNG =====
+        window.processOrder = function (url) {
+            fetch(url, { method: "POST" })
+                .then(r => {
+                    // Bắt ngay lỗi ngầm từ Server (Ví dụ: Lỗi 500 do sai mã nhân viên)
+                    if (!r.ok) throw new Error("Lỗi Server. Có thể mã Nhân viên không tồn tại hoặc lỗi CSDL!");
+                    return r.json();
+                })
+                .then(result => {
+                    if (result.code <= 0) {
+                        alert(result.message);
+                    } else {
+                        // Đóng Modal và làm mới trang
+                        let modalInstance = bootstrap.Modal.getInstance(document.getElementById("dialogModal"));
+                        if (modalInstance) modalInstance.hide();
+                        window.location.reload();
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi quá trình xử lý đơn hàng:", err);
+                    alert("Đã xảy ra lỗi: " + err.message + "\n\nHãy kiểm tra lại ID Nhân viên trong OrderController.");
+                });
+        };
+        // =========================================================================
+
+        // ===== THÊM ĐOẠN NÀY ĐỂ XỬ LÝ NÚT GIAO HÀNG (CÓ CHỌN SHIPPER) =====
+        window.shipOrder = function (url) {
+            const shipperID = document.getElementById("shipperID").value;
+
+            fetch(url, {
+                method: "POST",
+                headers: { "Content-Type": "application/x-www-form-urlencoded" },
+                body: `shipperID=${shipperID}`
+            })
+                .then(r => {
+                    if (!r.ok) throw new Error("Lỗi Server. Không thể kết nối!");
+                    return r.json();
+                })
+                .then(result => {
+                    if (result.code <= 0) {
+                        alert(result.message);
+                    } else {
+                        // Đóng Modal và làm mới trang
+                        let modalInstance = bootstrap.Modal.getInstance(document.getElementById("dialogModal"));
+                        if (modalInstance) modalInstance.hide();
+                        window.location.reload();
+                    }
+                })
+                .catch(err => {
+                    console.error("Lỗi:", err);
+                    alert("Đã xảy ra lỗi hệ thống: " + err.message);
+                });
+        };
+        // =================================================================
+
     </script>
+
     @await RenderSectionAsync("Scripts", required: false)
 </body>
 </html>
