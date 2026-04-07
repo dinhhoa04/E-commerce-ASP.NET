@@ -101,9 +101,10 @@
                         <div class="card h-100 border-0 shadow-sm product-card rounded-4">
                             <a href="~/Home/Detail/@item.ProductID" class="text-decoration-none">
                                 <div class="product-img-wrap">
-                                    <img src="/images/products/@(string.IsNullOrEmpty(item.Photo) ? "nophoto.png" : item.Photo)"
+                                    <img src="http://localhost:5284/images/products/@(string.IsNullOrEmpty(item.Photo) ? "nophoto.png" : item.Photo)"
                                          class="product-img"
-                                         alt="@item.ProductName" />
+                                         alt="@item.ProductName"
+                                         onerror="this.src='http://localhost:5284/images/nophoto.png'" />
                                 </div>
                             </a>
                             <div class="card-body d-flex flex-column p-3">

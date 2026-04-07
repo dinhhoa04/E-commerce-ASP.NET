@@ -71,7 +71,8 @@ namespace SV22T1020123.Web.Controllers
             ViewBag.Title = "Bổ sung khách hàng";
             var model = new Customer()
             {
-                CustomerID = 0
+                CustomerID = 0,
+                IsLocked = false
             };
             return View("Edit", model); // dùng chung view Edit
         }
@@ -153,12 +154,18 @@ namespace SV22T1020123.Web.Controllers
         }
 
         // GET: /Customer/ChangePassword/5
-        //Thay đổi mật khẩu 
-        public IActionResult ChangePassword(int id)
+        [HttpGet]
+        public async Task<IActionResult> ChangePassword(int id)
         {
             ViewBag.Title = "Đổi mật khẩu khách hàng";
-            ViewBag.CustomerId = id;
-            return View();
+
+            // Lấy thông tin khách hàng từ DB dựa vào ID
+            var model = await PartnerDataService.GetCustomerAsync(id);
+            if (model == null)
+                return RedirectToAction("Index");
+
+            // Truyền dữ liệu khách hàng ra ngoài View
+            return View(model);
         }
 
         /// <summary>
@@ -167,46 +174,32 @@ namespace SV22T1020123.Web.Controllers
         [HttpPost]
         public async Task<IActionResult> ChangePassword(int id, string newPassword, string confirmPassword)
         {
-            ViewBag.Title = "Đổi mật khẩu khách hàng";
-            ViewBag.CustomerId = id;
-
-            if (string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+            if (string.IsNullOrWhiteSpace(newPassword) || newPassword != confirmPassword)
             {
-                ModelState.AddModelError("Error", "Vui lòng nhập đầy đủ mật khẩu mới và xác nhận!");
-                return View();
-            }
-
-            if (newPassword != confirmPassword)
-            {
-                ModelState.AddModelError("Error", "Mật khẩu xác nhận không khớp!");
+                ModelState.AddModelError("Error", "Mật khẩu không hợp lệ hoặc xác nhận không khớp.");
+                ViewBag.CustomerId = id;
                 return View();
             }
 
             try
             {
-                // 1. Lấy thông tin khách hàng dựa vào ID để biết Email của họ là gì
                 var customer = await PartnerDataService.GetCustomerAsync(id);
-                if (customer == null)
-                    return RedirectToAction("Index");
+                if (customer == null) return RedirectToAction("Index");
 
-                // 2. Băm mật khẩu mới ra mã MD5 (CHÌA KHÓA QUAN TRỌNG Ở ĐÂY)
-                string hashedNewPassword = SV22T1020123.Admin.CryptHelper.HashMD5(newPassword);
+                // BĂM MD5 TRƯỚC KHI LƯU (Dùng CryptHelper của Admin)
+                string hashedPassword = CryptHelper.HashMD5(newPassword);
 
-                // 3. Lưu xuống Database thông qua SecurityDataService
-                bool isSuccess = await SecurityDataService.ChangePasswordAsync(customer.Email, hashedNewPassword);
+                // Lưu vào bảng Customers thông qua Service
+                bool isSuccess = await PartnerDataService.ChangeCustomerPasswordAsync(id, hashedPassword);
 
-                if (isSuccess)
-                {
-                    // Lưu thành công thì đá về trang Danh sách khách hàng
-                    return RedirectToAction("Index");
-                }
+                if (isSuccess) return RedirectToAction("Index");
 
-                ModelState.AddModelError("Error", "Không thể cập nhật mật khẩu vào cơ sở dữ liệu!");
+                ModelState.AddModelError("Error", "Lỗi cập nhật Database.");
                 return View();
             }
             catch
             {
-                ModelState.AddModelError("Error", "Hệ thống đang xảy ra lỗi, vui lòng thử lại sau.");
+                ModelState.AddModelError("Error", "Hệ thống đang bận.");
                 return View();
             }
         }

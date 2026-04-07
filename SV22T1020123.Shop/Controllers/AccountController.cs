@@ -29,8 +29,10 @@ namespace SV22T1020123.Shop.Controllers
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
-            // SO SÁNH TRỰC TIẾP PASSWORD GỐC (Không mã hóa MD5)
-            var customer = await PartnerDataService.AuthorizeCustomerAsync(email, password);
+            // 1. BĂM MẬT KHẨU BẰNG MD5 TRƯỚC KHI SO SÁNH
+            string hashedPassword = CryptHelper.HashMD5(password);
+
+            var customer = await PartnerDataService.AuthorizeCustomerAsync(email, hashedPassword);
 
             if (customer != null)
             {
@@ -103,8 +105,10 @@ namespace SV22T1020123.Shop.Controllers
 
                 if (customerId > 0)
                 {
-                    // LƯU TRỰC TIẾP PASSWORD GỐC (Không mã hóa MD5)
-                    await PartnerDataService.ChangeCustomerPasswordAsync(customerId, password);
+                    // 2. BĂM MẬT KHẨU MỚI BẰNG MD5 TRƯỚC KHI LƯU VÀO DB
+                    string hashedPassword = CryptHelper.HashMD5(password);
+                    await PartnerDataService.ChangeCustomerPasswordAsync(customerId, hashedPassword);
+
                     return RedirectToAction("Login");
                 }
             }
@@ -196,8 +200,9 @@ namespace SV22T1020123.Shop.Controllers
             if (!int.TryParse(claimId, out int customerId) || string.IsNullOrEmpty(email))
                 return RedirectToAction("Login");
 
-            // KIỂM TRA BẰNG PASSWORD CŨ GỐC
-            var customer = await PartnerDataService.AuthorizeCustomerAsync(email, oldPassword);
+            // 3. BĂM MẬT KHẨU CŨ BẰNG MD5 ĐỂ KIỂM TRA
+            string hashedOldPassword = CryptHelper.HashMD5(oldPassword);
+            var customer = await PartnerDataService.AuthorizeCustomerAsync(email, hashedOldPassword);
 
             if (customer == null)
             {
@@ -205,8 +210,9 @@ namespace SV22T1020123.Shop.Controllers
                 return View();
             }
 
-            // LƯU PASSWORD MỚI GỐC (Không mã hóa MD5)
-            await PartnerDataService.ChangeCustomerPasswordAsync(customerId, newPassword);
+            // 4. BĂM MẬT KHẨU MỚI BẰNG MD5 TRƯỚC KHI LƯU
+            string hashedNewPassword = CryptHelper.HashMD5(newPassword);
+            await PartnerDataService.ChangeCustomerPasswordAsync(customerId, hashedNewPassword);
 
             TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
             return RedirectToAction("Profile");
