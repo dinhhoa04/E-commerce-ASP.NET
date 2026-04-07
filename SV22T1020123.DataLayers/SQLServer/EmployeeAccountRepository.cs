@@ -2,6 +2,7 @@
 using Microsoft.Data.SqlClient;
 using SV22T1020123.DataLayers.Interfaces;
 using SV22T1020123.Models.Security;
+using System.Threading.Tasks;
 
 namespace SV22T1020123.DataLayers.SQLServer
 {
@@ -26,16 +27,16 @@ namespace SV22T1020123.DataLayers.SQLServer
 
             return await connection.QueryFirstOrDefaultAsync<UserAccount>(
                 @"SELECT 
-                        EmployeeID AS UserId,
+                        CAST(EmployeeID AS NVARCHAR(50)) AS UserId,
                         Email AS UserName,
                         FullName AS DisplayName,
                         Email,
                         Photo,
-                        RoleNames
+                        ISNULL(RoleNames, '') AS RoleNames
                   FROM Employees
                   WHERE Email = @userName
                         AND Password = @password
-                        AND (IsWorking = 1 OR IsWorking IS NULL)",
+                        AND IsWorking = 1",
                 new { userName, password });
         }
 

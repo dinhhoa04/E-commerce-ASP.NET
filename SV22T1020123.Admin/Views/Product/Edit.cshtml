@@ -67,10 +67,10 @@
                         </div>
                         <label class="col-sm-2 col-form-label text-end">Giá</label>
                         <div class="col-sm-4">
-                            <input type="text"
+                            <input type="number"
                                    name="Price"
                                    value="@((long)Model.Price)"
-                                   class="form-control money-input"
+                                   class="form-control"
                                    placeholder="Giá bán" />
                             <span asp-validation-for="Price" class="text-danger"></span>
                         </div>

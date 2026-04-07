@@ -1,12 +1,23 @@
-﻿<aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
+﻿@{
+    // Lấy danh sách quyền của người đang đăng nhập
+    var roles = User.GetUserData()?.Roles ?? new List<string>();
+
+    // Tạo các biến kiểm tra quyền (Nếu là employee_admin thì luôn bằng True)
+    bool isAdmin = roles.Contains("employee_admin");
+    bool canManageCustomer = isAdmin || roles.Contains("Quản lý khách hàng");
+    bool canManageProduct = isAdmin || roles.Contains("Quản lý mặt hàng");
+    bool canManageOrder = isAdmin || roles.Contains("Quản lý đơn hàng");
+}
+
+<aside class="app-sidebar bg-body-secondary shadow" data-bs-theme="dark">
     <div class="sidebar-brand">
         <a href="#" class="brand-link">
             <img src="~/lib/adminlte/assets/img/AdminLTELogo.png" alt="Logo" class="brand-image opacity-75 shadow" />
             <span class="brand-text fw-light">TNP Shop</span>
         </a>
-    </div>    
+    </div>
     <div class="sidebar-wrapper">
-        <nav class="mt-2">            
+        <nav class="mt-2">
             <ul class="nav sidebar-menu flex-column" data-lte-toggle="treeview" role="navigation"
                 aria-label="Main navigation" data-accordion="false" id="navigation">
 
@@ -32,75 +43,90 @@
                                 <p>Nhà cung cấp</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="~/Customer" class="nav-link">
-                                <i class="nav-icon bi bi-people"></i>
-                                <p>Khách hàng</p>
-                            </a>
-                        </li>
+
+                        @if (canManageCustomer)
+                        {
+                            <li class="nav-item">
+                                <a href="~/Customer" class="nav-link">
+                                    <i class="nav-icon bi bi-people"></i>
+                                    <p>Khách hàng</p>
+                                </a>
+                            </li>
+                        }
+
                         <li class="nav-item">
                             <a href="~/Shipper" class="nav-link">
                                 <i class="nav-icon bi bi-bicycle"></i>
                                 <p>Người giao hàng</p>
                             </a>
                         </li>
-                        <li class="nav-item">
-                            <a href="~/Employee" class="nav-link">
-                                <i class="nav-icon bi bi-people-fill"></i>
-                                <p>Nhân viên</p>
-                            </a>
-                        </li>
+
+                        @if (isAdmin)
+                        {
+                            <li class="nav-item">
+                                <a href="~/Employee" class="nav-link">
+                                    <i class="nav-icon bi bi-people-fill"></i>
+                                    <p>Nhân viên</p>
+                                </a>
+                            </li>
+                        }
                     </ul>
                 </li>
 
-                <li class="nav-item menu-open">
-                    <a href="#" class="nav-link active">
-                        <i class="nav-icon bi bi-archive"></i>
-                        <p>
-                            Quản lý hàng hóa
-                            <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="~/Category" class="nav-link">
-                                <i class="nav-icon bi bi-collection"></i>
-                                <p>Loại hàng</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="~/Product" class="nav-link">
-                                <i class="nav-icon bi bi-boxes"></i>
-                                <p>Mặt hàng</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+                @if (canManageProduct)
+                {
+                    <li class="nav-item menu-open">
+                        <a href="#" class="nav-link active">
+                            <i class="nav-icon bi bi-archive"></i>
+                            <p>
+                                Quản lý hàng hóa
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="~/Category" class="nav-link">
+                                    <i class="nav-icon bi bi-collection"></i>
+                                    <p>Loại hàng</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="~/Product" class="nav-link">
+                                    <i class="nav-icon bi bi-boxes"></i>
+                                    <p>Mặt hàng</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                }
 
-                <li class="nav-item menu-open">
-                    <a href="#" class="nav-link active">
-                        <i class="nav-icon bi bi-cash-stack"></i>
-                        <p>
-                            Quản lý bán hàng
-                            <i class="nav-arrow bi bi-chevron-right"></i>
-                        </p>
-                    </a>
-                    <ul class="nav nav-treeview">
-                        <li class="nav-item">
-                            <a href="~/Order/Create" class="nav-link">
-                                <i class="nav-icon bi bi-cart-plus"></i>
-                                <p>Lập đơn hàng</p>
-                            </a>
-                        </li>
-                        <li class="nav-item">
-                            <a href="~/Order" class="nav-link">
-                                <i class="nav-icon bi bi-receipt"></i>
-                                <p>Quản lý đơn hàng</p>
-                            </a>
-                        </li>
-                    </ul>
-                </li>
-            </ul>            
+                @if (canManageOrder)
+                {
+                    <li class="nav-item menu-open">
+                        <a href="#" class="nav-link active">
+                            <i class="nav-icon bi bi-cash-stack"></i>
+                            <p>
+                                Quản lý bán hàng
+                                <i class="nav-arrow bi bi-chevron-right"></i>
+                            </p>
+                        </a>
+                        <ul class="nav nav-treeview">
+                            <li class="nav-item">
+                                <a href="~/Order/Create" class="nav-link">
+                                    <i class="nav-icon bi bi-cart-plus"></i>
+                                    <p>Lập đơn hàng</p>
+                                </a>
+                            </li>
+                            <li class="nav-item">
+                                <a href="~/Order" class="nav-link">
+                                    <i class="nav-icon bi bi-receipt"></i>
+                                    <p>Quản lý đơn hàng</p>
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                }
+            </ul>
         </nav>
-    </div>    
+    </div>
 </aside>

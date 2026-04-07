@@ -18,6 +18,9 @@ namespace SV22T1020123.DataLayers.SQLServer
         // =====================================================
         // LẤY DANH SÁCH ĐƠN HÀNG (PHÂN TRANG)
         // =====================================================
+        // =====================================================
+        // LẤY DANH SÁCH ĐƠN HÀNG (PHÂN TRANG)
+        // =====================================================
         public async Task<PagedResult<OrderViewInfo>> ListAsync(OrderSearchInput input)
         {
             using var connection = new SqlConnection(_connectionString);
@@ -33,23 +36,33 @@ namespace SV22T1020123.DataLayers.SQLServer
             };
 
             var sql = @"
-SELECT COUNT(*) 
-FROM Orders
-WHERE (@SearchValue = '' OR OrderID LIKE '%' + @SearchValue + '%')
+                -- 1. ĐẾM SỐ LƯỢNG ĐƠN HÀNG THỎA MÃN ĐIỀU KIỆN
+                SELECT COUNT(*) 
+                FROM Orders o
+                LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
+                WHERE (@SearchValue = N'' OR c.CustomerName LIKE N'%' + @SearchValue + N'%')
+                  AND (@Status = 0 OR o.Status = @Status)
+                  AND (@DateFrom IS NULL OR o.OrderTime >= @DateFrom)
+                  AND (@DateTo IS NULL OR o.OrderTime <= @DateTo);
 
-SELECT o.*, 
-       c.CustomerName, c.ContactName AS CustomerContactName,
-       c.Email AS CustomerEmail, c.Phone AS CustomerPhone,
-       c.Address AS CustomerAddress,
-       e.FullName AS EmployeeName,
-       s.ShipperName, s.Phone AS ShipperPhone
-FROM Orders o
-LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
-LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
-LEFT JOIN Shippers s ON o.ShipperID = s.ShipperID
-ORDER BY o.OrderID DESC
-OFFSET (@Page - 1) * @PageSize ROWS
-FETCH NEXT @PageSize ROWS ONLY";
+                -- 2. LẤY DỮ LIỆU ĐƠN HÀNG THỎA MÃN ĐIỀU KIỆN
+                SELECT o.*, 
+                       c.CustomerName, c.ContactName AS CustomerContactName,
+                       c.Email AS CustomerEmail, c.Phone AS CustomerPhone,
+                       c.Address AS CustomerAddress,
+                       e.FullName AS EmployeeName,
+                       s.ShipperName, s.Phone AS ShipperPhone
+                FROM Orders o
+                LEFT JOIN Customers c ON o.CustomerID = c.CustomerID
+                LEFT JOIN Employees e ON o.EmployeeID = e.EmployeeID
+                LEFT JOIN Shippers s ON o.ShipperID = s.ShipperID
+                WHERE (@SearchValue = N'' OR c.CustomerName LIKE N'%' + @SearchValue + N'%')
+                  AND (@Status = 0 OR o.Status = @Status)
+                  AND (@DateFrom IS NULL OR o.OrderTime >= @DateFrom)
+                  AND (@DateTo IS NULL OR o.OrderTime <= @DateTo)
+                ORDER BY o.OrderID DESC
+                OFFSET (@Page - 1) * @PageSize ROWS
+                FETCH NEXT @PageSize ROWS ONLY";
 
             using var multi = await connection.QueryMultipleAsync(sql, parameters);
 

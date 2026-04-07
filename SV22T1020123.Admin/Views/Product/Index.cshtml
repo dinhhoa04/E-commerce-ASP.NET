@@ -33,12 +33,13 @@
                 <div class="col-md-3">
                     <label class="form-label">Khoảng giá</label>
                     <div class="input-group">
-                        <input type="text" asp-for="MinPrice"
-                               class="form-control money-input"
+                        <input type="number" asp-for="MinPrice"
+                               class="form-control"
                                placeholder="Từ" />
                         <span class="input-group-text">-</span>
-                        <input type="text" asp-for="MaxPrice"
-                               class="form-control money-input"
+
+                        <input type="number" asp-for="MaxPrice"
+                               class="form-control"
                                placeholder="Đến" />
                     </div>
                 </div>

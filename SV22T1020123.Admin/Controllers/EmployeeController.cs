@@ -187,10 +187,32 @@ namespace SV22T1020123.Admin.Controllers
         }
 
         [HttpPost]
-        public IActionResult SaveRole(int employeeID, string[] roles)
+        public async Task<IActionResult> SaveRole(int employeeID, string[] roles)
         {
-            // TODO: Xử lý lưu phân quyền thật sau
-            return RedirectToAction("Index");
+            try
+            {
+                // 1. Ghép các quyền người dùng tích chọn thành một chuỗi cách nhau bởi dấu phẩy
+                string roleNames = roles != null ? string.Join(",", roles) : "";
+
+                // 2. Lấy thông tin nhân viên lên
+                var employee = await HRDataService.GetEmployeeAsync(employeeID);
+                if (employee == null) return RedirectToAction("Index");
+
+                // 3. Gán quyền mới cho nhân viên
+                employee.RoleNames = roleNames;
+
+                // 4. Lưu xuống Database
+                // Dùng hàm cập nhật nhân viên của thầy để lưu lại chuỗi quyền này
+                await HRDataService.UpdateEmployeeAsync(employee);
+
+                TempData["SuccessMessage"] = "Cập nhật phân quyền thành công!";
+                return RedirectToAction("Index");
+            }
+            catch
+            {
+                ModelState.AddModelError("Error", "Hệ thống xảy ra lỗi khi phân quyền.");
+                return RedirectToAction("ChangeRole", new { id = employeeID });
+            }
         }
     }
 }

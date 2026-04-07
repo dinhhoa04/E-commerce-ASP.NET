@@ -210,12 +210,14 @@ namespace SV22T1020123.Shop.Controllers
                 return View();
             }
 
-            // 4. BĂM MẬT KHẨU MỚI BẰNG MD5 TRƯỚC KHI LƯU
+            // 4. BĂM MẬT KHẨU MỚI BẰNG MD5 TRƯỚC KHI LƯU (Chỉ để 1 lần duy nhất)
             string hashedNewPassword = CryptHelper.HashMD5(newPassword);
             await PartnerDataService.ChangeCustomerPasswordAsync(customerId, hashedNewPassword);
 
             TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
-            return RedirectToAction("Profile");
+
+            // Trả về đúng trang ChangePassword
+            return RedirectToAction("ChangePassword");
         }
     }
 }

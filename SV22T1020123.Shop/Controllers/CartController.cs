@@ -98,5 +98,24 @@ namespace SV22T1020123.Shop.Controllers
             var cart = GetCart();
             return Json(cart.Sum(c => c.Quantity));
         }
+
+        // =========================================================================
+        // XÓA TOÀN BỘ GIỎ HÀNG
+        // =========================================================================
+       
+        public IActionResult ClearCart()
+        {
+            // Thay vì gọi Service của Admin, ta tạo ra một giỏ hàng trống...
+            var emptyCart = new List<OrderDetailViewInfo>();
+
+            // ...và lưu đè nó vào Session (Cách này an toàn và đồng bộ nhất)
+            SaveCart(emptyCart);
+
+            // Hoặc bạn cũng có thể xóa hẳn key trong Session bằng câu lệnh:
+            // HttpContext.Session.Remove(SHOPPING_CART);
+
+            // Xóa xong thì tải lại trang Giỏ hàng để cập nhật giao diện
+            return RedirectToAction("Index");
+        }
     }
 }
