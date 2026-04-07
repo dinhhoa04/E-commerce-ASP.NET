@@ -8,57 +8,119 @@
 
 <nav aria-label="breadcrumb" class="mb-4">
     <ol class="breadcrumb">
-        <li class="breadcrumb-item"><a href="~/">Trang chủ</a></li>
-        <li class="breadcrumb-item active" aria-current="page">@Model.ProductName</li>
+        <li class="breadcrumb-item"><a href="~/" class="text-decoration-none">Trang chủ</a></li>
+        <li class="breadcrumb-item active">@Model.ProductName</li>
     </ol>
 </nav>
 
-<div class="row mb-5">
+<div class="row g-5 mb-5">
+    <!-- ẢNH SẢN PHẨM -->
     <div class="col-md-5">
-        <div class="card shadow-sm mb-3">
-            <img id="mainImage" src="http://localhost:5284/images/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)" class="img-fluid rounded p-2" alt="@Model.ProductName" style="max-height: 400px; object-fit: contain; width: 100%;">
+        <div class="card border-0 shadow-sm rounded-4 p-3 mb-3">
+            <img id="mainImage"
+                 src="/images/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)"
+                 class="img-fluid rounded-3"
+                 alt="@Model.ProductName"
+                 style="max-height:380px; object-fit:contain; width:100%;" />
         </div>
+
         @if (photos != null && photos.Any(p => !p.IsHidden))
         {
-            <div class="d-flex gap-2 overflow-auto pb-2">
-                <img src="http://localhost:5284/images/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)" class="img-thumbnail cursor-pointer" style="width: 80px; height: 80px; object-fit: cover;" onclick="changeMainImage(this.src)">
-
+            <div class="d-flex gap-2 overflow-auto pb-1">
+                <img src="/images/products/@(string.IsNullOrEmpty(Model.Photo) ? "nophoto.png" : Model.Photo)"
+                     class="thumb-img active-thumb"
+                     onclick="changeMainImage(this.src, this)" />
                 @foreach (var p in photos.Where(x => !x.IsHidden).OrderBy(x => x.DisplayOrder))
                 {
-                    <img src="http://localhost:5284/images/products/@p.Photo" class="img-thumbnail cursor-pointer" alt="@p.Description" style="width: 80px; height: 80px; object-fit: cover;" onclick="changeMainImage(this.src)">
+                    <img src="/images/products/@p.Photo"
+                         class="thumb-img"
+                         alt="@p.Description"
+                         onclick="changeMainImage(this.src, this)" />
                 }
             </div>
         }
     </div>
 
+    <!-- THÔNG TIN SẢN PHẨM -->
     <div class="col-md-7">
-        <h2 class="fw-bold mb-3">@Model.ProductName</h2>
-        <h3 class="text-danger fw-bold mb-4">@Model.Price.ToString("N0") đ <span class="fs-6 text-muted fw-normal">/ @Model.Unit</span></h3>
-
-        <div class="mb-4">
-            <p>@Model.ProductDescription</p>
+        <h2 class="fw-bold mb-2">@Model.ProductName</h2>
+        <div class="d-flex align-items-center gap-3 mb-3">
+            <span class="badge bg-success">Còn hàng</span>
+            <span class="text-muted small">ĐVT: @Model.Unit</span>
         </div>
+
+        <div class="price-box bg-light rounded-4 p-3 mb-4">
+            <span class="fs-2 fw-bold text-danger">@Model.Price.ToString("N0")</span>
+            <span class="fs-5 text-muted ms-1">đ</span>
+        </div>
+
+        @if (!string.IsNullOrEmpty(Model.ProductDescription))
+        {
+            <p class="text-muted mb-4">@Model.ProductDescription</p>
+        }
 
         <hr />
 
-        <div class="d-flex align-items-center gap-3 mt-4 mb-4">
-            <div style="width: 120px;">
-                <input type="number" id="quantity" class="form-control text-center" value="1" min="1">
+        <div class="d-flex align-items-center gap-3 mb-4">
+            <div class="qty-control d-flex align-items-center border rounded-pill overflow-hidden">
+                <button class="btn btn-light px-3 border-0" onclick="changeQty(-1)">
+                    <i class="bi bi-dash"></i>
+                </button>
+                <input type="number" id="quantity"
+                       class="form-control border-0 text-center fw-bold"
+                       value="1" min="1"
+                       style="width:60px;" />
+                <button class="btn btn-light px-3 border-0" onclick="changeQty(1)">
+                    <i class="bi bi-plus"></i>
+                </button>
             </div>
-            <button class="btn btn-primary btn-lg px-4">
+            <button class="btn btn-primary btn-lg px-5 rounded-pill flex-grow-1"
+                    id="btn-add-to-cart-detail"
+                    data-id="@Model.ProductID">
                 <i class="bi bi-cart-plus me-2"></i>Thêm vào giỏ hàng
             </button>
         </div>
 
+        <div class="row g-3">
+            <div class="col-6">
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="bi bi-shield-check text-success fs-5"></i>
+                    <span>Hàng chính hãng 100%</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="bi bi-truck text-primary fs-5"></i>
+                    <span>Giao hàng toàn quốc</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="bi bi-arrow-repeat text-warning fs-5"></i>
+                    <span>Đổi trả trong 7 ngày</span>
+                </div>
+            </div>
+            <div class="col-6">
+                <div class="d-flex align-items-center gap-2 text-muted small">
+                    <i class="bi bi-headset text-danger fs-5"></i>
+                    <span>Hỗ trợ 24/7</span>
+                </div>
+            </div>
+        </div>
+
         @if (attributes != null && attributes.Any())
         {
-            <h5 class="fw-bold mt-5 mb-3">Thông số kỹ thuật</h5>
-            <table class="table table-striped table-bordered">
+            <h5 class="fw-bold mt-4 mb-3">
+                <i class="bi bi-list-check me-2"></i>Thông số kỹ thuật
+            </h5>
+            <table class="table table-striped table-bordered rounded-3 overflow-hidden">
                 <tbody>
                     @foreach (var attr in attributes.OrderBy(a => a.DisplayOrder))
                     {
                         <tr>
-                            <th style="width: 30%">@attr.AttributeName</th>
+                            <th class="text-muted fw-semibold" style="width:35%">
+                                @attr.AttributeName
+                            </th>
                             <td>@attr.AttributeValue</td>
                         </tr>
                     }
@@ -68,14 +130,44 @@
     </div>
 </div>
 
+<style>
+    .thumb-img {
+        width: 72px;
+        height: 72px;
+        object-fit: cover;
+        border-radius: 8px;
+        border: 2px solid #e2e8f0;
+        cursor: pointer;
+        transition: all 0.2s;
+    }
+
+        .thumb-img:hover, .thumb-img.active-thumb {
+            border-color: #2563eb;
+            transform: scale(1.05);
+        }
+
+    .qty-control input::-webkit-outer-spin-button,
+    .qty-control input::-webkit-inner-spin-button {
+        -webkit-appearance: none;
+    }
+
+    .price-box {
+        border-left: 4px solid #ef4444;
+    }
+</style>
+
 @section Scripts {
     <script>
-        function changeMainImage(src) {
+        function changeMainImage(src, el) {
             document.getElementById('mainImage').src = src;
+            document.querySelectorAll('.thumb-img').forEach(i => i.classList.remove('active-thumb'));
+            el.classList.add('active-thumb');
+        }
+        function changeQty(delta) {
+            const input = document.getElementById('quantity');
+            let val = parseInt(input.value) + delta;
+            if (val < 1) val = 1;
+            input.value = val;
         }
     </script>
-    <style>
-        .cursor-pointer { cursor: pointer; }
-        .cursor-pointer:hover { border-color: #0d6efd; }
-    </style>
 }

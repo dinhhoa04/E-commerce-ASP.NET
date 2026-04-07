@@ -1,10 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
 using SV22T1020123.BusinessLayers;
 using SV22T1020123.Models.Common;
 using SV22T1020123.Models.HR;
+using System;
+using System.IO;
+using System.Threading.Tasks;
 
 namespace SV22T1020123.Admin.Controllers
 {
+    [Authorize]
     public class EmployeeController : Controller
     {
         private const string EMPLOYEE_SEARCH = "EmployeeSearchInput";
@@ -59,42 +65,9 @@ namespace SV22T1020123.Admin.Controllers
             var model = await HRDataService.GetEmployeeAsync(id);
             if (model == null)
                 return RedirectToAction("Index");
+
             ViewBag.CanDelete = !await HRDataService.IsUsedEmployeeAsync(id);
             return View(model);
-        }
-
-        public async Task<IActionResult> ChangePassword(int id)
-        {
-            ViewBag.Title = "Đổi mật khẩu nhân viên";
-            var model = await HRDataService.GetEmployeeAsync(id);
-            if (model == null)
-                return RedirectToAction("Index");
-            return View(model);
-        }
-
-        public async Task<IActionResult> ChangeRole(int id)
-        {
-            ViewBag.Title = "Phân quyền nhân viên";
-            var model = await HRDataService.GetEmployeeAsync(id);
-            if (model == null)
-                return RedirectToAction("Index");
-            return View(model);
-        }
-
-        [HttpPost]
-        public IActionResult SavePassword(int employeeID, string newPassword, string confirmPassword)
-        {
-            // TODO: Xử lý đổi mật khẩu thật sau
-            // Tạm thời redirect về Index
-            return RedirectToAction("Index");
-        }
-
-        [HttpPost]
-        public IActionResult SaveRole(int employeeID, string[] roles)
-        {
-            // TODO: Xử lý lưu phân quyền thật sau
-            // Tạm thời redirect về Index
-            return RedirectToAction("Index");
         }
 
         [HttpPost]
@@ -142,6 +115,82 @@ namespace SV22T1020123.Admin.Controllers
                 ModelState.AddModelError(string.Empty, "Hệ thống đang bận hoặc dữ liệu không hợp lệ");
                 return View("Edit", data);
             }
+        }
+
+        // =========================================================================
+        // KHU VỰC CẤP LẠI MẬT KHẨU (NÚT CHÌA KHÓA VÀNG)
+        // =========================================================================
+
+        public async Task<IActionResult> ChangePassword(int id)
+        {
+            ViewBag.Title = "Đổi mật khẩu nhân viên";
+            var model = await HRDataService.GetEmployeeAsync(id);
+            if (model == null)
+                return RedirectToAction("Index");
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> SavePassword(int employeeID, string newPassword, string confirmPassword)
+        {
+            // Lấy thông tin nhân viên lên trước để truyền lại View nếu bị lỗi
+            var model = await HRDataService.GetEmployeeAsync(employeeID);
+            if (model == null) return RedirectToAction("Index");
+
+            if (string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+            {
+                ModelState.AddModelError("Error", "Vui lòng nhập đầy đủ mật khẩu!");
+                return View("ChangePassword", model);
+            }
+
+            if (newPassword != confirmPassword)
+            {
+                ModelState.AddModelError("Error", "Mật khẩu xác nhận không khớp!");
+                return View("ChangePassword", model);
+            }
+
+            try
+            {
+                // Băm mật khẩu ra mã MD5
+                string hashedNewPassword = SV22T1020123.Admin.CryptHelper.HashMD5(newPassword);
+
+                // Gọi Service lưu vào DB
+                bool isSuccess = await SecurityDataService.ChangePasswordAsync(model.Email, hashedNewPassword);
+
+                if (isSuccess)
+                {
+                    // Nếu lưu thành công, đá về trang danh sách nhân viên
+                    return RedirectToAction("Index");
+                }
+
+                ModelState.AddModelError("Error", "Không thể cập nhật mật khẩu, vui lòng thử lại!");
+                return View("ChangePassword", model);
+            }
+            catch
+            {
+                ModelState.AddModelError("Error", "Hệ thống đang xảy ra lỗi, vui lòng thử lại sau!");
+                return View("ChangePassword", model);
+            }
+        }
+
+        // =========================================================================
+        // KHU VỰC PHÂN QUYỀN VAI TRÒ
+        // =========================================================================
+
+        public async Task<IActionResult> ChangeRole(int id)
+        {
+            ViewBag.Title = "Phân quyền nhân viên";
+            var model = await HRDataService.GetEmployeeAsync(id);
+            if (model == null)
+                return RedirectToAction("Index");
+            return View(model);
+        }
+
+        [HttpPost]
+        public IActionResult SaveRole(int employeeID, string[] roles)
+        {
+            // TODO: Xử lý lưu phân quyền thật sau
+            return RedirectToAction("Index");
         }
     }
 }

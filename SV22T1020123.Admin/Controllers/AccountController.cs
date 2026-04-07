@@ -2,16 +2,23 @@
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-// Thêm thư viện gọi tầng Database của bạn vào đây:
-// using SV22T1020123.BusinessLayers;
+using SV22T1020123.BusinessLayers;
+using SV22T1020123.Models.Security;
+using System.Threading.Tasks;
+using System.Linq;
 
 namespace SV22T1020123.Admin.Controllers
 {
-    [Authorize] // Bảo vệ toàn bộ AccountController, trừ những hàm có [AllowAnonymous]
+    /// <summary>
+    /// Cung cấp các chức năng quản lý liên quan đến tài khoản người dùng
+    /// </summary>
+    [Authorize]
     public class AccountController : Controller
     {
-        [AllowAnonymous] // Cho phép khách chưa đăng nhập truy cập trang này
+        /// <summary>
+        /// Giao diện Đăng nhập
+        /// </summary>
+        [AllowAnonymous]
         [HttpGet]
         public IActionResult Login()
         {
@@ -22,110 +29,144 @@ namespace SV22T1020123.Admin.Controllers
             return View();
         }
 
+        /// <summary>
+        /// Xử lý dữ liệu Đăng nhập
+        /// </summary>
         [AllowAnonymous]
         [HttpPost]
         public async Task<IActionResult> Login(string username, string password)
         {
-            ViewBag.Username = username;
+            ViewBag.UserName = username;
 
-            if (string.IsNullOrWhiteSpace(username) || string.IsNullOrWhiteSpace(password))
+            if (string.IsNullOrEmpty(username) || string.IsNullOrEmpty(password))
             {
-                ModelState.AddModelError("Error", "Vui lòng nhập đầy đủ email và mật khẩu!");
+                ModelState.AddModelError("Error", "Vui lòng nhập đầy đủ tên đăng nhập và mật khẩu.");
                 return View();
             }
 
-            // =========================================================================
-            // BƯỚC NÀY GỌI XUỐNG DATABASE ĐỂ KIỂM TRA MẬT KHẨU CỦA NHÂN VIÊN.
-            // Ví dụ chuẩn trong hệ thống LiteCommerce:
-            // var userAccount = await UserAccountService.AuthorizeAsync(UserAccountService.UserTypes.Employee, username, password);
-            //
-            // (Hiện tại mình để Mock Data tạm, bạn thay dòng if dưới đây bằng việc 
-            // kiểm tra object userAccount trả về từ DB nhé!)
-            // =========================================================================
+            // 1. Mã hoá MD5 mật khẩu 
+            string hashedPassword = CryptHelper.HashMD5(password);
 
-            bool isLoginSuccess = (username == "admin@gmail.com" && password == "123");
-            int employeeID = 1; // Lấy ID của nhân viên từ CSDL
-            string fullName = "Admin Cửa Hàng";
-
-            if (!isLoginSuccess)
+            // 2. Kiểm tra username và hashedPassword với cơ sở dữ liệu
+            var userAccount = await SecurityDataService.AuthorizeAsync(username, hashedPassword);
+            if (userAccount == null)
             {
-                ModelState.AddModelError("Error", "Đăng nhập thất bại. Vui lòng kiểm tra lại!");
+                ModelState.AddModelError("Error", "Tên đăng nhập hoặc mật khẩu không đúng.");
                 return View();
             }
 
-            // Nếu đúng mật khẩu, tạo "Thẻ bài" (Cookie) cho Admin
-            var claims = new List<Claim>()
+            // 3. Chặn khách hàng đăng nhập vào trang Admin (ĐÃ ĐƯA LÊN TRƯỚC KHI RETURN)
+            if (userAccount.RoleNames != null && userAccount.RoleNames.Contains("Customer"))
             {
-                new Claim(ClaimTypes.Name, fullName),
-                new Claim(ClaimTypes.Email, username),
-                new Claim("EmployeeID", employeeID.ToString()) // Rất quan trọng để các tính năng duyệt đơn hàng lấy mã NV
+                ModelState.AddModelError("Error", "Tài khoản không có quyền truy cập hệ thống quản trị.");
+                return View();
+            }
+
+            // Xử lý đăng nhập thành công
+            // 4. Chuẩn bị thông tin sẽ ghi trong principal (ClaimPrincipal)
+            var userData = new WebUserData()
+            {
+                UserId = userAccount.UserId,
+                UserName = userAccount.UserName,
+                DisplayName = userAccount.DisplayName,
+                Email = userAccount.Email,
+                Photo = userAccount.Photo ?? "nophoto.png",
+                Roles = userAccount.RoleNames.Split(',').ToList()
             };
 
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
+            // 5. Tạo chứng nhận (ClaimsPrincipal) cho người dùng
+            var principal = userData.CreatePrincipal();
 
+            // 6. Cấp chứng nhận và lưu Cookie (Bổ sung scheme để hệ thống hiểu)
             await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
+            // 7. Vào trang chủ Admin
             return RedirectToAction("Index", "Home");
         }
 
+        /// <summary>
+        /// Đăng xuất tài khoản người dùng
+        /// </summary>
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
-            HttpContext.Session.Clear(); // Xóa sạch giỏ hàng tạm lúc lập đơn
-            return RedirectToAction("Login");
+            try
+            {
+                HttpContext.Session.Clear();
+                await HttpContext.SignOutAsync();
+                return RedirectToAction("Login");
+            }
+            catch
+            {
+                ModelState.AddModelError(string.Empty, "Hệ thống đang xảy ra lỗi, vui lòng thử lại sau");
+                return RedirectToAction("Login");
+            }
+
         }
 
-        public IActionResult AccessDenied()
-        {
-            return View();
-        }
-
-        // ===== CHỨC NĂNG ĐỔI MẬT KHẨU CHO ADMIN =====
-
+        /// <summary>
+        /// Hiển thị giao diện Đổi mật khẩu (GET)
+        /// </summary>
         [HttpGet]
         public IActionResult ChangePassword()
         {
             return View();
         }
 
+        /// <summary>
+        /// Nhận dữ liệu từ form và lưu xuống Database (POST)
+        /// </summary>
         [HttpPost]
         public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, string confirmPassword)
         {
-            if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+            try
             {
-                ModelState.AddModelError("Error", "Vui lòng nhập đầy đủ thông tin!");
+                if (string.IsNullOrWhiteSpace(oldPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+                {
+                    ModelState.AddModelError("Error", "Vui lòng nhập đầy đủ thông tin!");
+                    return View();
+                }
+
+                if (newPassword != confirmPassword)
+                {
+                    ModelState.AddModelError("Error", "Xác nhận mật khẩu mới không khớp!");
+                    return View();
+                }
+
+                // 1. Lấy thông tin tài khoản đang đăng nhập
+                var userData = User.GetUserData();
+                if (userData == null || string.IsNullOrEmpty(userData.Email))
+                    return RedirectToAction("Login");
+
+                string username = userData.Email;
+
+                // 2. BĂM MẬT KHẨU CŨ SANG MD5 VÀ KIỂM TRA
+                string hashedOldPassword = CryptHelper.HashMD5(oldPassword);
+                var userAccount = await SecurityDataService.AuthorizeAsync(username, hashedOldPassword);
+
+                if (userAccount == null)
+                {
+                    ModelState.AddModelError("Error", "Mật khẩu cũ không chính xác!");
+                    return View();
+                }
+
+                // 3. BĂM MẬT KHẨU MỚI SANG MD5 VÀ LƯU XUỐNG DB
+                string hashedNewPassword = CryptHelper.HashMD5(newPassword);
+                bool isSuccess = await SecurityDataService.ChangePasswordAsync(username, hashedNewPassword);
+
+                if (isSuccess)
+                {
+                    TempData["SuccessMessage"] = "Đổi mật khẩu thành công! Hãy dùng mật khẩu mới cho lần đăng nhập sau.";
+                    return RedirectToAction("ChangePassword");
+                }
+
+                ModelState.AddModelError("Error", "Không thể cập nhật mật khẩu vào cơ sở dữ liệu!");
                 return View();
             }
-
-            if (newPassword != confirmPassword)
+            catch
             {
-                ModelState.AddModelError("Error", "Xác nhận mật khẩu mới không khớp!");
+                ModelState.AddModelError("Error", "Hệ thống đang xảy ra lỗi, vui lòng thử lại sau.");
                 return View();
             }
-
-            // Lấy email (username) của Admin đang đăng nhập từ Cookie
-            var username = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.Email)?.Value;
-            if (string.IsNullOrEmpty(username))
-            {
-                return RedirectToAction("Login");
-            }
-
-            // =====================================================================
-            // TODO: GỌI XUỐNG CSDL ĐỂ KIỂM TRA MẬT KHẨU CŨ & LƯU MẬT KHẨU MỚI TẠI ĐÂY
-            // Ví dụ (Nếu bạn có UserAccountService):
-            // var user = await UserAccountService.AuthorizeAsync(UserAccountService.UserTypes.Employee, username, oldPassword);
-            // if (user == null) {
-            //     ModelState.AddModelError("Error", "Mật khẩu cũ không chính xác!");
-            //     return View();
-            // }
-            // await UserAccountService.ChangePasswordAsync(UserAccountService.UserTypes.Employee, username, newPassword);
-            // =====================================================================
-
-            // Tạm thời báo thành công (Khi nào có code nối CSDL thì bỏ dòng này đi)
-            TempData["SuccessMessage"] = "Đổi mật khẩu thành công! Bạn có thể sử dụng mật khẩu mới cho lần đăng nhập sau.";
-
-            return RedirectToAction("ChangePassword");
         }
     }
 }

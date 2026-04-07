@@ -1,18 +1,22 @@
 ﻿using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
-using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
-using SV22T1020123.BusinessLayers;
-using Microsoft.AspNetCore.Mvc.Rendering;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using SV22T1020123.BusinessLayers;
+using System.Collections.Generic;
+using System.Linq;
+using System.Security.Claims;
+using System.Threading.Tasks;
 
 namespace SV22T1020123.Shop.Controllers
 {
     public class AccountController : Controller
     {
-        /// <summary>
-        /// Giao diện đăng nhập
-        /// </summary>
+        // =========================================================================
+        // 1. ĐĂNG NHẬP / ĐĂNG XUẤT
+        // =========================================================================
+
         [HttpGet]
         public IActionResult Login()
         {
@@ -22,18 +26,14 @@ namespace SV22T1020123.Shop.Controllers
             return View();
         }
 
-        /// <summary>
-        /// Xử lý đăng nhập bằng Database thật
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Login(string email, string password)
         {
-            // Kiểm tra thông tin từ Database
+            // SO SÁNH TRỰC TIẾP PASSWORD GỐC (Không mã hóa MD5)
             var customer = await PartnerDataService.AuthorizeCustomerAsync(email, password);
 
             if (customer != null)
             {
-                // Tạo danh sách quyền (Claims) để lưu vào Cookie
                 var claims = new List<Claim>
                 {
                     new Claim(ClaimTypes.Name, customer.CustomerName),
@@ -44,7 +44,6 @@ namespace SV22T1020123.Shop.Controllers
                 var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
                 var principal = new ClaimsPrincipal(identity);
 
-                // Ghi Cookie đăng nhập
                 await HttpContext.SignInAsync(CookieAuthenticationDefaults.AuthenticationScheme, principal);
 
                 return RedirectToAction("Index", "Home");
@@ -56,9 +55,6 @@ namespace SV22T1020123.Shop.Controllers
             }
         }
 
-        /// <summary>
-        /// Đăng xuất
-        /// </summary>
         public async Task<IActionResult> Logout()
         {
             await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -66,9 +62,10 @@ namespace SV22T1020123.Shop.Controllers
             return RedirectToAction("Index", "Home");
         }
 
-        /// <summary>
-        /// Giao diện đăng ký
-        /// </summary>
+        // =========================================================================
+        // 2. ĐĂNG KÝ TÀI KHOẢN MỚI
+        // =========================================================================
+
         [HttpGet]
         public async Task<IActionResult> Register()
         {
@@ -76,13 +73,9 @@ namespace SV22T1020123.Shop.Controllers
             return View(new SV22T1020123.Models.Partner.Customer());
         }
 
-        /// <summary>
-        /// Xử lý đăng ký tài khoản mới và lưu mật khẩu vào Database
-        /// </summary>
         [HttpPost]
         public async Task<IActionResult> Register(SV22T1020123.Models.Partner.Customer data, string password, string confirmPassword)
         {
-            // 1. Kiểm tra mật khẩu khớp
             if (password != confirmPassword)
             {
                 ModelState.AddModelError("Error", "Mật khẩu xác nhận không khớp!");
@@ -90,7 +83,6 @@ namespace SV22T1020123.Shop.Controllers
                 return View(data);
             }
 
-            // 2. Kiểm tra email trùng
             bool isValidEmail = await PartnerDataService.ValidatelCustomerEmailAsync(data.Email ?? "", 0);
             if (!isValidEmail)
             {
@@ -99,22 +91,19 @@ namespace SV22T1020123.Shop.Controllers
                 return View(data);
             }
 
-            // 3. Chuẩn hóa dữ liệu
             data.IsLocked = false;
             if (string.IsNullOrEmpty(data.ContactName)) data.ContactName = data.CustomerName;
             data.Province = data.Province ?? "";
             data.Address = data.Address ?? "";
             data.Phone = data.Phone ?? "";
 
-            // 4. Lưu vào Database
             try
             {
-                // Lưu thông tin cơ bản của khách hàng
                 int customerId = await PartnerDataService.AddCustomerAsync(data);
 
                 if (customerId > 0)
                 {
-                    // Lưu mật khẩu thật vào Database
+                    // LƯU TRỰC TIẾP PASSWORD GỐC (Không mã hóa MD5)
                     await PartnerDataService.ChangeCustomerPasswordAsync(customerId, password);
                     return RedirectToAction("Login");
                 }
@@ -128,9 +117,6 @@ namespace SV22T1020123.Shop.Controllers
             return View(data);
         }
 
-        /// <summary>
-        /// Hàm bổ trợ load danh sách tỉnh thành
-        /// </summary>
         private async Task LoadProvincesToViewBag()
         {
             var provinces = await DictionaryDataService.ListProvincesAsync();
@@ -141,19 +127,17 @@ namespace SV22T1020123.Shop.Controllers
             }).ToList();
         }
 
-        // ===== CÁC HÀM MỚI THÊM: QUẢN LÝ THÔNG TIN CÁ NHÂN VÀ ĐỔI MẬT KHẨU =====
+        // =========================================================================
+        // 3. QUẢN LÝ THÔNG TIN CÁ NHÂN VÀ ĐỔI MẬT KHẨU
+        // =========================================================================
 
-        /// <summary>
-        /// Giao diện Thông tin cá nhân
-        /// </summary>
         [HttpGet]
-        [Authorize] // Yêu cầu phải đăng nhập mới được vào
+        [Authorize]
         public async Task<IActionResult> Profile()
         {
             var claimId = User.Claims.FirstOrDefault(c => c.Type == "CustomerID")?.Value;
             if (!int.TryParse(claimId, out int customerId)) return RedirectToAction("Login");
 
-            // Lấy thông tin khách hàng từ DB
             var customer = await PartnerDataService.GetCustomerAsync(customerId);
             if (customer == null) return RedirectToAction("Login");
 
@@ -161,9 +145,6 @@ namespace SV22T1020123.Shop.Controllers
             return View(customer);
         }
 
-        /// <summary>
-        /// Xử lý cập nhật thông tin cá nhân
-        /// </summary>
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> Profile(SV22T1020123.Models.Partner.Customer data)
@@ -171,7 +152,6 @@ namespace SV22T1020123.Shop.Controllers
             var claimId = User.Claims.FirstOrDefault(c => c.Type == "CustomerID")?.Value;
             if (!int.TryParse(claimId, out int customerId)) return RedirectToAction("Login");
 
-            // Đảm bảo không bị thay đổi ID và trạng thái khóa
             data.CustomerID = customerId;
             data.IsLocked = false;
             if (string.IsNullOrEmpty(data.ContactName)) data.ContactName = data.CustomerName;
@@ -193,9 +173,6 @@ namespace SV22T1020123.Shop.Controllers
             return View(data);
         }
 
-        /// <summary>
-        /// Giao diện đổi mật khẩu
-        /// </summary>
         [HttpGet]
         [Authorize]
         public IActionResult ChangePassword()
@@ -203,9 +180,6 @@ namespace SV22T1020123.Shop.Controllers
             return View();
         }
 
-        /// <summary>
-        /// Xử lý đổi mật khẩu
-        /// </summary>
         [HttpPost]
         [Authorize]
         public async Task<IActionResult> ChangePassword(string oldPassword, string newPassword, string confirmPassword)
@@ -222,22 +196,20 @@ namespace SV22T1020123.Shop.Controllers
             if (!int.TryParse(claimId, out int customerId) || string.IsNullOrEmpty(email))
                 return RedirectToAction("Login");
 
-            // Kiểm tra mật khẩu cũ có đúng không
+            // KIỂM TRA BẰNG PASSWORD CŨ GỐC
             var customer = await PartnerDataService.AuthorizeCustomerAsync(email, oldPassword);
+
             if (customer == null)
             {
                 ModelState.AddModelError("Error", "Mật khẩu cũ không chính xác!");
                 return View();
             }
 
-            // Cập nhật mật khẩu mới
+            // LƯU PASSWORD MỚI GỐC (Không mã hóa MD5)
             await PartnerDataService.ChangeCustomerPasswordAsync(customerId, newPassword);
 
             TempData["SuccessMessage"] = "Đổi mật khẩu thành công!";
             return RedirectToAction("Profile");
         }
-        // =====================================================================
-
-
     }
 }
